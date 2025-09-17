@@ -1,4 +1,4 @@
-﻿import type { Config } from 'drizzle-kit';
+import type { Config } from 'drizzle-kit';
 import * as dotenv from 'dotenv';
 
 dotenv.config({ path: '.env' });
@@ -10,5 +10,4 @@ export default {
   dbCredentials: {
     url: process.env.DATABASE_URL || 'postgres://postgres:admin@localhost:5432/ecommerce_db',
   },
-  tablesFilter: ['public_*'],
 } satisfies Config;

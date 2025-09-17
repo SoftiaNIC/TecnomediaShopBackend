@@ -1,19 +1,4 @@
-CREATE TABLE "users" (
-	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-	"email" varchar(255) NOT NULL,
-	"password" varchar(255) NOT NULL,
-	"first_name" varchar(100) NOT NULL,
-	"last_name" varchar(100) NOT NULL,
-	"phone" varchar(20),
-	"is_active" boolean DEFAULT true NOT NULL,
-	"is_email_verified" boolean DEFAULT false NOT NULL,
-	"role" varchar(50) DEFAULT 'customer' NOT NULL,
-	"avatar" text,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "users_email_unique" UNIQUE("email")
-);
---> statement-breakpoint
+CREATE TYPE "public"."user_role" AS ENUM('superadmin', 'admin', 'cliente');--> statement-breakpoint
 CREATE TABLE "categories" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"name" varchar(100) NOT NULL,
@@ -48,6 +33,22 @@ CREATE TABLE "products" (
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "products_slug_unique" UNIQUE("slug"),
 	CONSTRAINT "products_sku_unique" UNIQUE("sku")
+);
+--> statement-breakpoint
+CREATE TABLE "users" (
+	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+	"email" varchar(255) NOT NULL,
+	"password" varchar(255) NOT NULL,
+	"first_name" varchar(100) NOT NULL,
+	"last_name" varchar(100) NOT NULL,
+	"phone" varchar(20),
+	"is_active" boolean DEFAULT true NOT NULL,
+	"is_email_verified" boolean DEFAULT false NOT NULL,
+	"role" "user_role" DEFAULT 'cliente' NOT NULL,
+	"avatar" text,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
 ALTER TABLE "products" ADD CONSTRAINT "products_category_id_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."categories"("id") ON DELETE no action ON UPDATE no action;
