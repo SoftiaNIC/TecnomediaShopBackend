@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery }
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { UsersService } from './users.service';
-import { User } from '../database/repositories/users.repository';
+import { User, UserRole } from './domain/user.entity';
 
 @ApiTags('users')
 @Controller('users')
@@ -25,7 +25,7 @@ export class UsersController {
       ...createUserDto,
       isActive: true,
       isEmailVerified: false,
-      role: 'customer',
+      role: UserRole.CUSTOMER,
     };
     return await this.usersService.create(userData);
   }

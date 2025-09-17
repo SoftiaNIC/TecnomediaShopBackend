@@ -2,7 +2,7 @@ import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query } fro
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ProductsService } from './products.service';
-import { Product } from '../database/repositories/products.repository';
+import { Product } from './domain/product.entity';
 
 @ApiTags('products')
 @Controller('products')

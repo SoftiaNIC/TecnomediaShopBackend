@@ -1,79 +1,104 @@
 import { Injectable } from '@nestjs/common';
-import { ProductsRepository, NewProduct, Product } from '../database/repositories';
+import { ProductDomainService } from './domain/product.service';
+import { ProductRepositoryAdapter } from './domain/product.repository';
+import { Product, CreateProductCommand, UpdateProductCommand, ProductStatus } from './domain/product.entity';
 
 @Injectable()
 export class ProductsService {
-  constructor(private readonly productsRepository: ProductsRepository) {}
+  constructor(
+    private readonly productDomainService: ProductDomainService,
+    private readonly productRepository: ProductRepositoryAdapter,
+  ) {}
 
-  async create(productData: NewProduct): Promise<Product> {
-    return await this.productsRepository.create(productData);
+  async create(productData: CreateProductCommand): Promise<Product> {
+    return await this.productDomainService.createProduct(productData);
   }
 
   async findById(id: string): Promise<Product | null> {
-    return await this.productsRepository.findById(id);
+    return await this.productRepository.findById(id);
   }
 
   async findBySlug(slug: string): Promise<Product | null> {
-    return await this.productsRepository.findBySlug(slug);
+    return await this.productRepository.findBySlug(slug);
   }
 
   async findBySku(sku: string): Promise<Product | null> {
-    return await this.productsRepository.findBySku(sku);
+    return await this.productRepository.findBySku(sku);
   }
 
   async findAll(limit = 10, offset = 0, sortBy = 'createdAt', sortOrder = 'desc'): Promise<Product[]> {
-    return await this.productsRepository.findAll(limit, offset, sortBy, sortOrder);
+    return await this.productRepository.findAll(limit, offset, sortBy, sortOrder);
   }
 
   async findByCategory(categoryId: string, limit = 10, offset = 0): Promise<Product[]> {
-    return await this.productsRepository.findByCategory(categoryId, limit, offset);
+    return await this.productDomainService.findProductsByCategory(categoryId, limit, offset);
   }
 
   async search(searchTerm: string, limit = 10, offset = 0): Promise<Product[]> {
-    return await this.productsRepository.search(searchTerm, limit, offset);
+    return await this.productRepository.search(searchTerm, limit, offset);
   }
 
-  async findActive(limit = 10, offset = 0): Promise<Product[]> {
-    return await this.productsRepository.findActive(limit, offset);
-  }
-
-  async findInStock(limit = 10, offset = 0): Promise<Product[]> {
-    return await this.productsRepository.findInStock(limit, offset);
-  }
-
-  async findDigital(limit = 10, offset = 0): Promise<Product[]> {
-    return await this.productsRepository.findDigital(limit, offset);
-  }
-
-  async update(id: string, productData: Partial<NewProduct>): Promise<Product | null> {
-    return await this.productsRepository.update(id, productData);
+  async update(id: string, productData: UpdateProductCommand): Promise<Product | null> {
+    return await this.productDomainService.updateProduct(id, productData);
   }
 
   async delete(id: string): Promise<boolean> {
-    return await this.productsRepository.delete(id);
+    return await this.productRepository.delete(id);
+  }
+
+  async findActive(limit = 10, offset = 0): Promise<Product[]> {
+    return await this.productRepository.findActiveProducts(limit, offset);
+  }
+
+  async findLowStock(threshold = 10, limit = 50): Promise<Product[]> {
+    return await this.productDomainService.findLowStockProducts(threshold, limit);
+  }
+
+  async findOutOfStock(limit = 50): Promise<Product[]> {
+    return await this.productDomainService.findOutOfStockProducts(limit);
   }
 
   async count(): Promise<number> {
-    return await this.productsRepository.count();
+    return await this.productRepository.count();
   }
 
   async countByCategory(categoryId: string): Promise<number> {
-    return await this.productsRepository.countByCategory(categoryId);
+    return await this.productRepository.countByCategory(categoryId);
   }
 
   async countActive(): Promise<number> {
-    return await this.productsRepository.countActive();
+    return await this.productRepository.countActive();
   }
 
-  async countInStock(): Promise<number> {
-    return await this.productsRepository.countInStock();
+  async activateProduct(id: string): Promise<Product | null> {
+    return await this.productDomainService.activateProduct(id);
+  }
+
+  async deactivateProduct(id: string): Promise<Product | null> {
+    return await this.productDomainService.deactivateProduct(id);
+  }
+
+  async getProductStatus(id: string): Promise<ProductStatus> {
+    return await this.productDomainService.getProductStatus(id);
+  }
+
+  async updateProductPrice(id: string, newPrice: number): Promise<Product | null> {
+    return await this.productDomainService.updateProductPrice(id, newPrice);
+  }
+
+  async updateProductQuantity(id: string, quantityChange: number): Promise<Product | null> {
+    return await this.productDomainService.updateProductQuantity(id, quantityChange);
+  }
+
+  async checkProductAvailability(id: string, requestedQuantity: number = 1): Promise<boolean> {
+    return await this.productDomainService.checkProductAvailability(id, requestedQuantity);
+  }
+
+  async findInStock(limit = 10, offset = 0): Promise<Product[]> {
+    return await this.productRepository.findInStock(limit, offset);
   }
 
   async updateStock(id: string, quantity: number): Promise<Product | null> {
-    return await this.productsRepository.updateStock(id, quantity);
-  }
-
-  async findLowStock(threshold: number = 10, limit = 10, offset = 0): Promise<Product[]> {
-    return await this.productsRepository.findLowStock(threshold, limit, offset);
+    return await this.productRepository.updateStock(id, quantity);
   }
 }

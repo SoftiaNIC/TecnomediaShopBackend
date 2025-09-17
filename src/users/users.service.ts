@@ -1,51 +1,77 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { UsersRepository, NewUser, User } from '../database/repositories';
+import { Injectable } from '@nestjs/common';
+import { UserDomainService } from './domain/user.service';
+import { UserRepositoryAdapter } from './domain/user.repository';
+import { User, CreateUserCommand, UpdateUserCommand, UserRole } from './domain/user.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly usersRepository: UsersRepository) {}
+  constructor(
+    private readonly userDomainService: UserDomainService,
+    private readonly userRepository: UserRepositoryAdapter,
+  ) {}
 
-  async create(userData: NewUser): Promise<User> {
-    return await this.usersRepository.create(userData);
+  async create(userData: CreateUserCommand): Promise<User> {
+    return await this.userDomainService.createUser(userData);
   }
 
   async findById(id: string): Promise<User | null> {
-    return await this.usersRepository.findById(id);
+    return await this.userRepository.findById(id);
   }
 
   async findByEmail(email: string): Promise<User | null> {
-    return await this.usersRepository.findByEmail(email);
+    return await this.userRepository.findByEmail(email);
   }
 
   async findAll(limit = 10, offset = 0): Promise<User[]> {
-    return await this.usersRepository.findAll(limit, offset);
+    return await this.userRepository.findAll(limit, offset);
   }
 
   async search(searchTerm: string, limit = 10, offset = 0): Promise<User[]> {
-    return await this.usersRepository.search(searchTerm, limit, offset);
+    return await this.userRepository.search(searchTerm, limit, offset);
   }
 
-  async update(id: string, userData: Partial<NewUser>): Promise<User | null> {
-    return await this.usersRepository.update(id, userData);
+  async update(id: string, userData: UpdateUserCommand): Promise<User | null> {
+    return await this.userDomainService.updateUser(id, userData);
   }
 
   async delete(id: string): Promise<boolean> {
-    return await this.usersRepository.delete(id);
+    return await this.userRepository.delete(id);
   }
 
-  async findByRole(role: string, limit = 10, offset = 0): Promise<User[]> {
-    return await this.usersRepository.findByRole(role, limit, offset);
+  async findByRole(role: UserRole, limit = 10, offset = 0): Promise<User[]> {
+    return await this.userRepository.findByRole(role, limit, offset);
   }
 
   async findActiveUsers(limit = 10, offset = 0): Promise<User[]> {
-    return await this.usersRepository.findActiveUsers(limit, offset);
+    return await this.userRepository.findActiveUsers(limit, offset);
   }
 
   async count(): Promise<number> {
-    return await this.usersRepository.count();
+    return await this.userRepository.count();
   }
 
-  async countByRole(role: string): Promise<number> {
-    return await this.usersRepository.countByRole(role);
+  async countByRole(role: UserRole): Promise<number> {
+    return await this.userRepository.countByRole(role);
+  }
+
+  // Métodos de dominio expuestos a través del servicio de aplicación
+  async deactivateUser(id: string): Promise<User | null> {
+    return await this.userDomainService.deactivateUser(id);
+  }
+
+  async activateUser(id: string): Promise<User | null> {
+    return await this.userDomainService.activateUser(id);
+  }
+
+  async verifyEmail(id: string): Promise<User | null> {
+    return await this.userDomainService.verifyEmail(id);
+  }
+
+  async changeUserRole(id: string, newRole: UserRole): Promise<User | null> {
+    return await this.userDomainService.changeUserRole(id, newRole);
+  }
+
+  async validateUserCredentials(email: string, password: string): Promise<User | null> {
+    return await this.userDomainService.validateUserCredentials(email, password);
   }
 }

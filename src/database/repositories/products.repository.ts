@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, like, or, desc, asc } from 'drizzle-orm';
+import { eq, and, like, or, desc, asc, lte } from 'drizzle-orm';
 import { products, categories } from '../schema';
 import { DB_CONNECTION } from '../database.module';
 
@@ -192,11 +192,27 @@ export class ProductsRepository {
         and(
           eq(products.isActive, true),
           eq(products.trackQuantity, true),
-          eq(products.quantity, threshold)
+          lte(products.quantity, threshold)
         )
       )
       .limit(limit)
       .offset(offset)
       .orderBy(asc(products.quantity));
+  }
+
+  async findOutOfStock(limit = 10): Promise<Product[]> {
+    return await this.db
+      .select()
+      .from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          eq(products.trackQuantity, true),
+          eq(products.allowOutOfStockPurchases, false),
+          eq(products.quantity, 0)
+        )
+      )
+      .limit(limit)
+      .orderBy(desc(products.createdAt));
   }
 }
