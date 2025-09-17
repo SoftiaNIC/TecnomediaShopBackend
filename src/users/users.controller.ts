@@ -1,11 +1,14 @@
-import { Controller, Post, Body, UseGuards, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { UsersService } from './users.service';
+import { User } from '../database/repositories/users.repository';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
   
   @Post()
   @ApiOperation({ summary: 'Crear un nuevo usuario' })
@@ -17,21 +20,14 @@ export class UsersController {
     status: 400, 
     description: 'Datos de entrada inválidos' 
   })
-  async create(@Body() createUserDto: CreateUserDto) {
-    // Aquí iría la lógica para crear el usuario
-    return {
-      message: 'Usuario creado exitosamente',
-      user: {
-        id: 'uuid-generado',
-        email: createUserDto.email,
-        firstName: createUserDto.firstName,
-        lastName: createUserDto.lastName,
-        phone: createUserDto.phone,
-        role: 'customer',
-        isActive: true,
-        createdAt: new Date(),
-      }
+  async create(@Body() createUserDto: CreateUserDto): Promise<User> {
+    const userData = {
+      ...createUserDto,
+      isActive: true,
+      isEmailVerified: false,
+      role: 'customer',
     };
+    return await this.usersService.create(userData);
   }
 
   @Get('profile')
@@ -48,13 +44,98 @@ export class UsersController {
   })
   async getProfile() {
     // Aquí iría la lógica para obtener el perfil del usuario autenticado
+    // Por ahora, esto requeriría implementar un decorador para obtener el usuario del token
     return {
-      id: 'uuid-del-usuario',
-      email: 'usuario@ejemplo.com',
-      firstName: 'Juan',
-      lastName: 'Pérez',
-      role: 'customer',
-      isActive: true,
+      message: 'Perfil del usuario obtenido exitosamente',
+      // user: authenticatedUser
+    };
+  }
+
+  @Get()
+  @ApiOperation({ summary: 'Obtener todos los usuarios' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Lista de usuarios',
+  })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
+  async findAll(
+    @Query('limit') limit: number = 10,
+    @Query('offset') offset: number = 0
+  ): Promise<User[]> {
+    return await this.usersService.findAll(limit, offset);
+  }
+
+  @Get(':id')
+  @ApiOperation({ summary: 'Obtener un usuario por ID' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Usuario encontrado',
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Usuario no encontrado' 
+  })
+  @ApiParam({ name: 'id', description: 'ID del usuario' })
+  async findById(@Param('id') id: string): Promise<User | null> {
+    return await this.usersService.findById(id);
+  }
+
+  @Get('search/:term')
+  @ApiOperation({ summary: 'Buscar usuarios por término' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Resultados de búsqueda',
+  })
+  @ApiParam({ name: 'term', description: 'Término de búsqueda' })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'offset', required: false, type: Number })
+  async search(
+    @Param('term') term: string,
+    @Query('limit') limit: number = 10,
+    @Query('offset') offset: number = 0
+  ): Promise<User[]> {
+    return await this.usersService.search(term, limit, offset);
+  }
+
+  @Put(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Actualizar un usuario' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Usuario actualizado',
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Usuario no encontrado' 
+  })
+  @ApiParam({ name: 'id', description: 'ID del usuario' })
+  async update(
+    @Param('id') id: string,
+    @Body() updateData: Partial<CreateUserDto>
+  ): Promise<User | null> {
+    return await this.usersService.update(id, updateData);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Eliminar un usuario' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Usuario eliminado' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Usuario no encontrado' 
+  })
+  @ApiParam({ name: 'id', description: 'ID del usuario' })
+  async delete(@Param('id') id: string): Promise<{ message: string; success: boolean }> {
+    const success = await this.usersService.delete(id);
+    return {
+      message: success ? 'Usuario eliminado exitosamente' : 'Usuario no encontrado',
+      success
     };
   }
 }
