@@ -2,6 +2,8 @@ import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query, Requ
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { UsersService } from './users.service';
 import { User, UserRole } from './domain/user.entity';
 
@@ -11,7 +13,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.SUPERADMIN)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Crear nuevo usuario (solo SUPERADMIN)' })
   @ApiResponse({ 
@@ -66,7 +69,10 @@ export class UsersController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Obtener todos los usuarios' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener todos los usuarios (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 200, 
     description: 'Lista de usuarios',
@@ -96,7 +102,10 @@ export class UsersController {
   }
 
   @Get('search/:term')
-  @ApiOperation({ summary: 'Buscar usuarios por término' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Buscar usuarios por término (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 200, 
     description: 'Resultados de búsqueda',
@@ -113,9 +122,10 @@ export class UsersController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Actualizar un usuario' })
+  @ApiOperation({ summary: 'Actualizar un usuario (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 200, 
     description: 'Usuario actualizado',
@@ -133,9 +143,10 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Eliminar un usuario' })
+  @ApiOperation({ summary: 'Eliminar un usuario (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 200, 
     description: 'Usuario eliminado' 

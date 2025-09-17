@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq, and, like, or } from 'drizzle-orm';
-import { users } from '../schema';
+import { users, userRoleEnum } from '../schema';
 import { DB_CONNECTION } from '../database.module';
 
 export type NewUser = typeof users.$inferInsert;
@@ -75,7 +75,7 @@ export class UsersRepository {
     return (result.rowCount ?? 0) > 0;
   }
 
-  async findByRole(role: string, limit = 10, offset = 0): Promise<User[]> {
+  async findByRole(role: 'superadmin' | 'admin' | 'cliente', limit = 10, offset = 0): Promise<User[]> {
     return await this.db
       .select()
       .from(users)
@@ -102,7 +102,7 @@ export class UsersRepository {
     return result.length;
   }
 
-  async countByRole(role: string): Promise<number> {
+  async countByRole(role: 'superadmin' | 'admin' | 'cliente'): Promise<number> {
     const result = await this.db
       .select({ count: users.id })
       .from(users)

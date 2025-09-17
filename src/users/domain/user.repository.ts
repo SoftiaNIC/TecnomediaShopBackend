@@ -11,10 +11,10 @@ export interface IUserRepository {
   search(searchTerm: string, limit: number, offset: number): Promise<User[]>;
   update(id: string, userData: UpdateUserCommand): Promise<User | null>;
   delete(id: string): Promise<boolean>;
-  findByRole(role: UserRole, limit: number, offset: number): Promise<User[]>;
+  findByRole(role: 'superadmin' | 'admin' | 'cliente', limit: number, offset: number): Promise<User[]>;
   findActiveUsers(limit: number, offset: number): Promise<User[]>;
   count(): Promise<number>;
-  countByRole(role: UserRole): Promise<number>;
+  countByRole(role: 'superadmin' | 'admin' | 'cliente'): Promise<number>;
 }
 
 @Injectable()
@@ -55,9 +55,8 @@ export class UserRepositoryAdapter implements IUserRepository {
     return await this.usersRepository.delete(id);
   }
 
-  async findByRole(role: UserRole, limit: number, offset: number): Promise<User[]> {
-    const roleString = UserMapper.mapUserRoleToString(role);
-    const databaseUsers = await this.usersRepository.findByRole(roleString, limit, offset);
+  async findByRole(role: 'superadmin' | 'admin' | 'cliente', limit: number, offset: number): Promise<User[]> {
+    const databaseUsers = await this.usersRepository.findByRole(role, limit, offset);
     return UserMapper.toDomainEntities(databaseUsers);
   }
 
@@ -70,8 +69,7 @@ export class UserRepositoryAdapter implements IUserRepository {
     return await this.usersRepository.count();
   }
 
-  async countByRole(role: UserRole): Promise<number> {
-    const roleString = UserMapper.mapUserRoleToString(role);
-    return await this.usersRepository.countByRole(roleString);
+  async countByRole(role: 'superadmin' | 'admin' | 'cliente'): Promise<number> {
+    return await this.usersRepository.countByRole(role);
   }
 }

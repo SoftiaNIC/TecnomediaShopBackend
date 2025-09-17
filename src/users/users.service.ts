@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UserDomainService } from './domain/user.service';
 import { UserRepositoryAdapter } from './domain/user.repository';
 import { User, CreateUserCommand, UpdateUserCommand, UserRole } from './domain/user.entity';
+import { UserMapper } from './domain/user.mapper';
 
 @Injectable()
 export class UsersService {
@@ -47,7 +48,8 @@ export class UsersService {
   }
 
   async findByRole(role: UserRole, limit = 10, offset = 0): Promise<User[]> {
-    return await this.userRepository.findByRole(role, limit, offset);
+    const roleString = UserMapper.mapUserRoleToString(role);
+    return await this.userRepository.findByRole(roleString, limit, offset);
   }
 
   async findActiveUsers(limit = 10, offset = 0): Promise<User[]> {
@@ -59,7 +61,8 @@ export class UsersService {
   }
 
   async countByRole(role: UserRole): Promise<number> {
-    return await this.userRepository.countByRole(role);
+    const roleString = UserMapper.mapUserRoleToString(role);
+    return await this.userRepository.countByRole(roleString);
   }
 
   // Métodos de dominio expuestos a través del servicio de aplicación

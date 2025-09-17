@@ -36,8 +36,17 @@ export class UserMapper {
     }
   }
 
-  static mapUserRoleToString(role: UserRole): string {
-    return role.toLowerCase();
+  static mapUserRoleToString(role: UserRole): 'superadmin' | 'admin' | 'cliente' {
+    switch (role) {
+      case UserRole.SUPERADMIN:
+        return 'superadmin';
+      case UserRole.ADMIN:
+        return 'admin';
+      case UserRole.CLIENTE:
+        return 'cliente';
+      default:
+        return 'cliente';
+    }
   }
 
   static toDatabaseUser(domainUser: Partial<User>): Partial<DatabaseUser> {

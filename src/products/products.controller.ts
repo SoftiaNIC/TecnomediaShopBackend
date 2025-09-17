@@ -1,8 +1,11 @@
 import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { RolesGuard } from '../auth/roles.guard';
+import { Roles } from '../auth/roles.decorator';
 import { ProductsService } from './products.service';
 import { Product } from './domain/product.entity';
+import { UserRole } from '../users/domain/user.entity';
 
 @ApiTags('products')
 @Controller('products')
@@ -10,7 +13,10 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Crear un nuevo producto' })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear un nuevo producto (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 201, 
     description: 'Producto creado exitosamente',
@@ -146,9 +152,10 @@ export class ProductsController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Actualizar un producto' })
+  @ApiOperation({ summary: 'Actualizar un producto (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 200, 
     description: 'Producto actualizado',
@@ -167,9 +174,10 @@ export class ProductsController {
   }
 
   @Put(':id/stock')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Actualizar stock de un producto' })
+  @ApiOperation({ summary: 'Actualizar stock de un producto (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 200, 
     description: 'Stock actualizado',
@@ -187,9 +195,10 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Eliminar un producto' })
+  @ApiOperation({ summary: 'Eliminar un producto (ADMIN o SUPERADMIN)' })
   @ApiResponse({ 
     status: 200, 
     description: 'Producto eliminado' 

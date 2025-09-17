@@ -1,4 +1,7 @@
-import { pgTable, uuid, varchar, text, decimal, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, uuid, varchar, text, decimal, integer, boolean, timestamp, pgEnum } from "drizzle-orm/pg-core";
+
+// Enum para roles de usuario
+export const userRoleEnum = pgEnum('user_role', ['superadmin', 'admin', 'cliente']);
 
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -9,7 +12,7 @@ export const users = pgTable("users", {
   phone: varchar("phone", { length: 20 }),
   isActive: boolean("is_active").default(true).notNull(),
   isEmailVerified: boolean("is_email_verified").default(false).notNull(),
-  role: varchar("role", { length: 50 }).default("customer").notNull(),
+  role: userRoleEnum('role').default('cliente').notNull(),
   avatar: text("avatar"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
