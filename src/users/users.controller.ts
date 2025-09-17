@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query, Request } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { CreateUserDto } from './dto/create-user.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -11,23 +11,37 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   
   @Post()
-  @ApiOperation({ summary: 'Crear un nuevo usuario' })
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Crear nuevo usuario (solo SUPERADMIN)' })
   @ApiResponse({ 
     status: 201, 
     description: 'Usuario creado exitosamente',
+    type: 'User'
   })
   @ApiResponse({ 
     status: 400, 
     description: 'Datos de entrada inválidos' 
   })
-  async create(@Body() createUserDto: CreateUserDto): Promise<User> {
+  @ApiResponse({ 
+    status: 403, 
+    description: 'No autorizado - Solo SUPERADMIN puede crear usuarios' 
+  })
+  async create(@Body() createUserDto: CreateUserDto, @Request() req: Request): Promise<User> {
+    const currentUser = (req as any).user;
+    
+    // Validar que el usuario actual sea SUPERADMIN
+    await this.usersService.validateSuperadminCreation(currentUser);
+    
+    // Crear usuario con rol por defecto ADMIN
     const userData = {
       ...createUserDto,
       isActive: true,
       isEmailVerified: false,
-      role: UserRole.CUSTOMER,
+      role: UserRole.ADMIN,
     };
-    return await this.usersService.create(userData);
+    
+    return await this.usersService.createBySuperadmin(userData, currentUser);
   }
 
   @Get('profile')

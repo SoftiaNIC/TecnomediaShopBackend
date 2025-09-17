@@ -5,6 +5,7 @@ import { DatabaseModule } from '../database/database.module';
 import { UsersRepository } from '../database/repositories';
 import { UserDomainService } from './domain/user.service';
 import { UserRepositoryAdapter } from './domain/user.repository';
+import { PasswordService } from './domain/password.service';
 
 const USER_REPOSITORY_TOKEN = 'USER_REPOSITORY_TOKEN';
 
@@ -15,6 +16,7 @@ const USER_REPOSITORY_TOKEN = 'USER_REPOSITORY_TOKEN';
     UsersService, 
     UsersRepository, 
     UserDomainService, 
+    PasswordService,
     {
       provide: USER_REPOSITORY_TOKEN,
       useClass: UserRepositoryAdapter,

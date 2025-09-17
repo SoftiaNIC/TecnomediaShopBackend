@@ -14,9 +14,9 @@ export interface User {
 }
 
 export enum UserRole {
-  CUSTOMER = 'customer',
+  SUPERADMIN = 'superadmin',
   ADMIN = 'admin',
-  MANAGER = 'manager',
+  CLIENTE = 'cliente',
 }
 
 export interface CreateUserCommand {

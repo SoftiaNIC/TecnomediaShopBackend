@@ -2,12 +2,16 @@ import { Injectable, Inject } from '@nestjs/common';
 import type { IUserRepository } from './user.repository';
 import { User, CreateUserCommand, UpdateUserCommand, UserRole, UserEmail, UserName } from './user.entity';
 import { UserMapper } from './user.mapper';
+import { PasswordService } from './password.service';
 
 const USER_REPOSITORY_TOKEN = 'USER_REPOSITORY_TOKEN';
 
 @Injectable()
 export class UserDomainService {
-  constructor(@Inject(USER_REPOSITORY_TOKEN) private readonly userRepository: IUserRepository) {}
+  constructor(
+    @Inject(USER_REPOSITORY_TOKEN) private readonly userRepository: IUserRepository,
+    private readonly passwordService: PasswordService
+  ) {}
 
   async createUser(command: CreateUserCommand): Promise<User> {
     // Validaciones de dominio
@@ -19,19 +23,27 @@ export class UserDomainService {
     if (existingUser) {
       throw new Error('User with this email already exists');
     }
-
-    // Crear el usuario con valores por defecto
-    const userData = {
+    
+    // Hash de la contraseña
+    const hashedPassword = await this.passwordService.hashPassword(command.password);
+    
+    // Crear usuario con rol por defecto CLIENTE si no se especifica
+    const user: User = {
+      id: '', // Será generado por la base de datos
       email: userEmail.getValue(),
-      password: command.password, // En un caso real, aquí se hashearía la contraseña
+      password: hashedPassword,
       firstName: userName.getFirstName(),
       lastName: userName.getLastName(),
-      role: command.role || UserRole.CUSTOMER,
+      phone: command.phone,
+      role: command.role || UserRole.CLIENTE,
       isActive: true,
       isEmailVerified: false,
+      avatar: command.avatar,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     };
-
-    return await this.userRepository.create(userData);
+    
+    return await this.userRepository.create(user);
   }
 
   async updateUser(id: string, command: UpdateUserCommand): Promise<User | null> {
@@ -42,6 +54,11 @@ export class UserDomainService {
 
     // Validaciones de dominio para actualización
     const updateData: UpdateUserCommand = { ...command, updatedAt: new Date() };
+    
+    // Si se actualiza la contraseña, hacer hash
+    if (command.password) {
+      updateData.password = await this.passwordService.hashPassword(command.password);
+    }
 
     if (command.email) {
       const userEmail = new UserEmail(command.email);
@@ -63,6 +80,48 @@ export class UserDomainService {
     }
 
     return await this.userRepository.update(id, updateData);
+  }
+
+  async validateSuperadminCreation(currentUser: User): Promise<void> {
+    if (currentUser.role !== UserRole.SUPERADMIN) {
+      throw new Error('Only SUPERADMIN users can create new users');
+    }
+  }
+
+  async createUserBySuperadmin(command: CreateUserCommand, currentUser: User): Promise<User> {
+    // Validar que el usuario actual sea SUPERADMIN
+    await this.validateSuperadminCreation(currentUser);
+    
+    // Validaciones de dominio
+    const userEmail = new UserEmail(command.email);
+    const userName = new UserName(command.firstName, command.lastName);
+    
+    // Verificar si el email ya existe
+    const existingUser = await this.userRepository.findByEmail(userEmail.getValue());
+    if (existingUser) {
+      throw new Error('User with this email already exists');
+    }
+    
+    // Hash de la contraseña
+    const hashedPassword = await this.passwordService.hashPassword(command.password);
+    
+    // Crear usuario con rol por defecto ADMIN si no se especifica (solo SUPERADMIN puede crear)
+    const user: User = {
+      id: '', // Será generado por la base de datos
+      email: userEmail.getValue(),
+      password: hashedPassword,
+      firstName: userName.getFirstName(),
+      lastName: userName.getLastName(),
+      phone: command.phone,
+      role: command.role || UserRole.ADMIN,
+      isActive: true,
+      isEmailVerified: false,
+      avatar: command.avatar,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    
+    return await this.userRepository.create(user);
   }
 
   async deactivateUser(id: string): Promise<User | null> {

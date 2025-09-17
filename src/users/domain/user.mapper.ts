@@ -25,13 +25,14 @@ export class UserMapper {
 
   static mapStringToUserRole(role: string): UserRole {
     switch (role.toLowerCase()) {
+      case 'superadmin':
+        return UserRole.SUPERADMIN;
       case 'admin':
         return UserRole.ADMIN;
-      case 'manager':
-        return UserRole.MANAGER;
-      case 'customer':
+      case 'cliente':
+        return UserRole.CLIENTE;
       default:
-        return UserRole.CUSTOMER;
+        return UserRole.CLIENTE;
     }
   }
 

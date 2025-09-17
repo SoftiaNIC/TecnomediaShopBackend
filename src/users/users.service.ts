@@ -14,6 +14,14 @@ export class UsersService {
     return await this.userDomainService.createUser(userData);
   }
 
+  async createBySuperadmin(userData: CreateUserCommand, currentUser: User): Promise<User> {
+    return await this.userDomainService.createUserBySuperadmin(userData, currentUser);
+  }
+
+  async validateSuperadminCreation(currentUser: User): Promise<void> {
+    return await this.userDomainService.validateSuperadminCreation(currentUser);
+  }
+
   async findById(id: string): Promise<User | null> {
     return await this.userRepository.findById(id);
   }
