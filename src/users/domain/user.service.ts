@@ -189,8 +189,9 @@ export class UserDomainService {
       return null;
     }
 
-    // En un caso real, aquí se compararía el hash de la contraseña
-    if (user.password !== password) {
+    // Comparar la contraseña usando bcrypt
+    const isPasswordValid = await this.passwordService.comparePassword(password, user.password);
+    if (!isPasswordValid) {
       return null;
     }
 
