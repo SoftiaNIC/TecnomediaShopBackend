@@ -90,4 +90,31 @@ export class AuthService {
   async generateToken(payload: any): Promise<string> {
     return this.jwtService.sign(payload);
   }
+
+  async refreshToken(userId: string): Promise<{ access_token: string }> {
+    const user = await this.usersService.findById(userId);
+    if (!user || !user.isActive) {
+      throw new Error('User not found or inactive');
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role
+    };
+
+    const access_token = await this.generateToken(payload);
+    return { access_token };
+  }
+
+  async logout(userId: string): Promise<{ message: string }> {
+    // En una implementación más completa, aquí se agregaría el token a una lista negra
+    // Por ahora, simplemente confirmamos que el usuario existe y está activo
+    const user = await this.usersService.findById(userId);
+    if (!user || !user.isActive) {
+      throw new Error('User not found or inactive');
+    }
+
+    return { message: 'Sesión cerrada exitosamente' };
+  }
 }

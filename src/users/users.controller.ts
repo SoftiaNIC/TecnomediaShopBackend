@@ -1,51 +1,19 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query, Request } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
-import { CreateUserDto } from './dto/create-user.dto';
+import { Controller, UseGuards, Get, Param, Put, Delete, Query, Request, NotFoundException, ForbiddenException, BadRequestException, Body } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { UsersService } from './users.service';
 import { User, UserRole } from './domain/user.entity';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
   
-  @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.SUPERADMIN)
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Crear nuevo usuario (solo SUPERADMIN)' })
-  @ApiResponse({ 
-    status: 201, 
-    description: 'Usuario creado exitosamente',
-    type: 'User'
-  })
-  @ApiResponse({ 
-    status: 400, 
-    description: 'Datos de entrada inválidos' 
-  })
-  @ApiResponse({ 
-    status: 403, 
-    description: 'No autorizado - Solo SUPERADMIN puede crear usuarios' 
-  })
-  async create(@Body() createUserDto: CreateUserDto, @Request() req: Request): Promise<User> {
-    const currentUser = (req as any).user;
-    
-    // Validar que el usuario actual sea SUPERADMIN
-    await this.usersService.validateSuperadminCreation(currentUser);
-    
-    // Crear usuario con rol por defecto ADMIN
-    const userData = {
-      ...createUserDto,
-      isActive: true,
-      isEmailVerified: false,
-      role: UserRole.ADMIN,
-    };
-    
-    return await this.usersService.createBySuperadmin(userData, currentUser);
-  }
+  // Nota: La creación de usuarios se realiza a través del endpoint /auth/register
+  // para mantener separadas las responsabilidades de autenticación y gestión de usuarios
 
   @Get('profile')
   @UseGuards(JwtAuthGuard)
@@ -59,12 +27,18 @@ export class UsersController {
     status: 401, 
     description: 'Token de autorización inválido' 
   })
-  async getProfile() {
-    // Aquí iría la lógica para obtener el perfil del usuario autenticado
-    // Por ahora, esto requeriría implementar un decorador para obtener el usuario del token
+  async getProfile(@Request() req: Request) {
+    const currentUser = (req as any).user;
+    const user = await this.usersService.findById(currentUser.sub);
+    
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    
     return {
       message: 'Perfil del usuario obtenido exitosamente',
-      // user: authenticatedUser
+      data: user,
+      success: true
     };
   }
 
@@ -77,28 +51,69 @@ export class UsersController {
     status: 200, 
     description: 'Lista de usuarios',
   })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Token de autorización inválido' 
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'No tiene permisos para ver usuarios' 
+  })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'offset', required: false, type: Number })
   async findAll(
     @Query('limit') limit: number = 10,
     @Query('offset') offset: number = 0
-  ): Promise<User[]> {
-    return await this.usersService.findAll(limit, offset);
+  ) {
+    const users = await this.usersService.findAll(limit, offset);
+    return {
+      message: 'Lista de usuarios obtenida exitosamente',
+      data: users,
+      success: true
+    };
   }
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
   @ApiOperation({ summary: 'Obtener un usuario por ID' })
   @ApiResponse({ 
     status: 200, 
     description: 'Usuario encontrado',
   })
   @ApiResponse({ 
+    status: 401, 
+    description: 'Token de autorización inválido' 
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'No autorizado para ver este perfil' 
+  })
+  @ApiResponse({ 
     status: 404, 
     description: 'Usuario no encontrado' 
   })
   @ApiParam({ name: 'id', description: 'ID del usuario' })
-  async findById(@Param('id') id: string): Promise<User | null> {
-    return await this.usersService.findById(id);
+  async findById(@Param('id') id: string, @Request() req: Request) {
+    const currentUser = (req as any).user;
+    
+    // Los usuarios solo pueden ver su propio perfil, a menos que sean ADMIN o SUPERADMIN
+    if (currentUser.role !== UserRole.ADMIN && currentUser.role !== UserRole.SUPERADMIN) {
+      if (currentUser.sub !== id) {
+        throw new ForbiddenException('No autorizado para ver este perfil');
+      }
+    }
+    
+    const user = await this.usersService.findById(id);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    
+    return {
+      message: 'Usuario encontrado exitosamente',
+      data: user,
+      success: true
+    };
   }
 
   @Get('search/:term')
@@ -110,6 +125,14 @@ export class UsersController {
     status: 200, 
     description: 'Resultados de búsqueda',
   })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Token de autorización inválido' 
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'No tiene permisos para buscar usuarios' 
+  })
   @ApiParam({ name: 'term', description: 'Término de búsqueda' })
   @ApiQuery({ name: 'limit', required: false, type: Number })
   @ApiQuery({ name: 'offset', required: false, type: Number })
@@ -117,8 +140,13 @@ export class UsersController {
     @Param('term') term: string,
     @Query('limit') limit: number = 10,
     @Query('offset') offset: number = 0
-  ): Promise<User[]> {
-    return await this.usersService.search(term, limit, offset);
+  ) {
+    const users = await this.usersService.search(term, limit, offset);
+    return {
+      message: 'Búsqueda de usuarios completada exitosamente',
+      data: users,
+      success: true
+    };
   }
 
   @Put(':id')
@@ -131,15 +159,35 @@ export class UsersController {
     description: 'Usuario actualizado',
   })
   @ApiResponse({ 
+    status: 401, 
+    description: 'Token de autorización inválido' 
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'No tiene permisos para actualizar usuarios' 
+  })
+  @ApiResponse({ 
     status: 404, 
     description: 'Usuario no encontrado' 
   })
   @ApiParam({ name: 'id', description: 'ID del usuario' })
+  @ApiBody({ 
+    type: UpdateUserDto,
+    description: 'Datos del usuario a actualizar' 
+  })
   async update(
     @Param('id') id: string,
-    @Body() updateData: Partial<CreateUserDto>
-  ): Promise<User | null> {
-    return await this.usersService.update(id, updateData);
+    @Body() updateData: UpdateUserDto
+  ) {
+    const user = await this.usersService.update(id, updateData);
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    return {
+      message: 'Usuario actualizado exitosamente',
+      data: user,
+      success: true
+    };
   }
 
   @Delete(':id')
@@ -152,14 +200,25 @@ export class UsersController {
     description: 'Usuario eliminado' 
   })
   @ApiResponse({ 
+    status: 401, 
+    description: 'Token de autorización inválido' 
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'No tiene permisos para eliminar usuarios' 
+  })
+  @ApiResponse({ 
     status: 404, 
     description: 'Usuario no encontrado' 
   })
   @ApiParam({ name: 'id', description: 'ID del usuario' })
   async delete(@Param('id') id: string): Promise<{ message: string; success: boolean }> {
     const success = await this.usersService.delete(id);
+    if (!success) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
     return {
-      message: success ? 'Usuario eliminado exitosamente' : 'Usuario no encontrado',
+      message: 'Usuario eliminado exitosamente',
       success
     };
   }
