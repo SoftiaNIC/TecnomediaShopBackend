@@ -11,6 +11,17 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /**
+   * Remueve el campo password de un objeto User para seguridad
+   */
+  private removePassword(user: User | null): Omit<User, 'password'> | null {
+    if (!user) return null;
+    
+    // Crear una copia del objeto sin el campo password
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
   @Post('login')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Iniciar sesión de usuario' })
@@ -55,9 +66,15 @@ export class AuthController {
   async login(@Body() loginDto: LoginDto) {
     try {
       const result = await this.authService.login(loginDto.email, loginDto.password);
+      // Remover la contraseña del usuario antes de enviar la respuesta
+      const safeResult = {
+        access_token: result.access_token,
+        user: this.removePassword(result.user)
+      };
+      
       return {
         message: 'Login exitoso',
-        data: result,
+        data: safeResult,
         success: true
       };
     } catch (error) {
@@ -123,9 +140,15 @@ export class AuthController {
         phone: registerDto.phone,
         role: registerDto.role
       });
+      // Remover la contraseña del usuario antes de enviar la respuesta
+      const safeResult = {
+        access_token: result.access_token,
+        user: this.removePassword(result.user)
+      };
+      
       return {
         message: 'Usuario registrado exitosamente',
-        data: result,
+        data: safeResult,
         success: true
       };
     } catch (error) {
@@ -181,7 +204,8 @@ export class AuthController {
   async refreshToken(@Req() req: any) {
     try {
       const currentUser = (req as any).user;
-      const result = await this.authService.refreshToken(currentUser.sub);
+      const result = await this.authService.refreshToken(currentUser.sub); 
+      
       return {
         message: 'Token refrescado exitosamente',
         data: result,

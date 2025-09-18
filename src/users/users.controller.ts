@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Get, Param, Put, Delete, Query, Request, NotFoundException, ForbiddenException, BadRequestException, Body } from '@nestjs/common';
+import { Controller, UseGuards, Get, Param, Put, Delete, Query, Req, NotFoundException, ForbiddenException, BadRequestException, Body } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -11,6 +11,27 @@ import { UpdateUserDto } from './dto/update-user.dto';
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  /**
+   * Remueve el campo password de un objeto User para seguridad
+   */
+  private removePassword(user: User | null): Omit<User, 'password'> | null {
+    if (!user) return null;
+    
+    // Crear una copia del objeto sin el campo password
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  /**
+   * Remueve el campo password de un array de usuarios para seguridad
+   */
+  private removePasswords(users: User[]): Omit<User, 'password'>[] {
+    return users.map(user => {
+      const { password, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    });
+  }
   
   // Nota: La creación de usuarios se realiza a través del endpoint /auth/register
   // para mantener separadas las responsabilidades de autenticación y gestión de usuarios
@@ -27,17 +48,25 @@ export class UsersController {
     status: 401, 
     description: 'Token de autorización inválido' 
   })
-  async getProfile(@Request() req: Request) {
+  async getProfile(@Req() req: any) {
     const currentUser = (req as any).user;
+    console.log('DEBUG - Current user from JWT:', currentUser);
+    console.log('DEBUG - User ID (sub):', currentUser?.sub);
+    
+    if (!currentUser || !currentUser.sub) {
+      throw new BadRequestException('Token inválido o mal formado');
+    }
+    
     const user = await this.usersService.findById(currentUser.sub);
+    console.log('DEBUG - User found:', user);
     
     if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
+      throw new NotFoundException(`Usuario no encontrado con ID: ${currentUser.sub}`);
     }
     
     return {
       message: 'Perfil del usuario obtenido exitosamente',
-      data: user,
+      data: this.removePassword(user),
       success: true
     };
   }
@@ -68,7 +97,7 @@ export class UsersController {
     const users = await this.usersService.findAll(limit, offset);
     return {
       message: 'Lista de usuarios obtenida exitosamente',
-      data: users,
+      data: this.removePasswords(users),
       success: true
     };
   }
@@ -94,7 +123,7 @@ export class UsersController {
     description: 'Usuario no encontrado' 
   })
   @ApiParam({ name: 'id', description: 'ID del usuario' })
-  async findById(@Param('id') id: string, @Request() req: Request) {
+  async findById(@Param('id') id: string, @Req() req: any) {
     const currentUser = (req as any).user;
     
     // Los usuarios solo pueden ver su propio perfil, a menos que sean ADMIN o SUPERADMIN
@@ -111,7 +140,7 @@ export class UsersController {
     
     return {
       message: 'Usuario encontrado exitosamente',
-      data: user,
+      data: this.removePassword(user),
       success: true
     };
   }
@@ -144,7 +173,7 @@ export class UsersController {
     const users = await this.usersService.search(term, limit, offset);
     return {
       message: 'Búsqueda de usuarios completada exitosamente',
-      data: users,
+      data: this.removePasswords(users),
       success: true
     };
   }
@@ -185,7 +214,7 @@ export class UsersController {
     }
     return {
       message: 'Usuario actualizado exitosamente',
-      data: user,
+      data: this.removePassword(user),
       success: true
     };
   }
