@@ -82,6 +82,14 @@ export class UsersService {
     return await this.userDomainService.changeUserRole(id, newRole);
   }
 
+  /**
+   * 🔒 Security: Método público para actualización de roles con validaciones adicionales
+   * Este método es utilizado por el endpoint administrativo de asignación de roles
+   */
+  async updateRole(id: string, newRole: UserRole): Promise<User | null> {
+    return await this.userDomainService.changeUserRole(id, newRole);
+  }
+
   async validateUserCredentials(email: string, password: string): Promise<User | null> {
     return await this.userDomainService.validateUserCredentials(email, password);
   }

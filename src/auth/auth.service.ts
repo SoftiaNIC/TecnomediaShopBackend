@@ -41,24 +41,10 @@ export class AuthService {
     email: string;
     password: string;
     phone?: string;
-    role?: string;
   }): Promise<{ access_token: string; user: User }> {
-    // Convertir el rol string a enum UserRole
-    let userRole: UserRole | undefined;
-    if (userData.role) {
-      switch (userData.role.toLowerCase()) {
-        case 'superadmin':
-          userRole = UserRole.SUPERADMIN;
-          break;
-        case 'admin':
-          userRole = UserRole.ADMIN;
-          break;
-        case 'cliente':
-        default:
-          userRole = UserRole.CLIENTE;
-          break;
-      }
-    }
+    // 🔒 Security: Always assign CLIENTE role for public registration
+    // Administrative role assignment should be done through admin endpoints
+    const userRole = UserRole.CLIENTE;
     
     // Crear el usuario usando el UsersService
     const createUserCommand = {

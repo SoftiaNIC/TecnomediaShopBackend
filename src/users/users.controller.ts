@@ -6,6 +6,7 @@ import { Roles } from '../auth/roles.decorator';
 import { UsersService } from './users.service';
 import { User, UserRole } from './domain/user.entity';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
 
 @ApiTags('users')
 @Controller('users')
@@ -249,6 +250,80 @@ export class UsersController {
     return {
       message: 'Usuario eliminado exitosamente',
       success
+    };
+  }
+
+  @Put(':id/role')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Asignar rol a usuario (ADMIN o SUPERADMIN)',
+    description: '🔒 Permite asignar o cambiar el rol de un usuario. Solo disponible para administradores.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Rol asignado exitosamente' 
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Datos inválidos o rol no permitido' 
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Token de autorización inválido' 
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'No tiene permisos para asignar roles' 
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Usuario no encontrado' 
+  })
+  @ApiParam({ name: 'id', description: 'ID del usuario' })
+  @ApiBody({ 
+    type: AssignRoleDto,
+    description: 'Datos de asignación de rol' 
+  })
+  async assignRole(
+    @Param('id') id: string,
+    @Body() assignRoleDto: AssignRoleDto,
+    @Req() req: any
+  ) {
+    // 🔒 Security: Validaciones adicionales para asignación de roles
+    const currentUser = req.user;
+    
+    // Los ADMIN no pueden asignar rol SUPERADMIN
+    if (currentUser.role === UserRole.ADMIN && assignRoleDto.role === UserRole.SUPERADMIN) {
+      throw new ForbiddenException('Los administradores no pueden asignar el rol de superadministrador');
+    }
+    
+    // Los SUPERADMIN pueden asignar cualquier rol
+    // Validar que el usuario existe
+    const existingUser = await this.usersService.findById(id);
+    if (!existingUser) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+    
+    // No permitir cambiar el rol de un SUPERADMIN a menos que seas SUPERADMIN
+    if (existingUser.role === UserRole.SUPERADMIN && currentUser.role !== UserRole.SUPERADMIN) {
+      throw new ForbiddenException('No puedes modificar el rol de un superadministrador');
+    }
+    
+    // Asignar el nuevo rol
+    const updatedUser = await this.usersService.updateRole(id, assignRoleDto.role);
+    
+    return {
+      message: 'Rol asignado exitosamente',
+      data: {
+        userId: id,
+        previousRole: existingUser.role,
+        newRole: assignRoleDto.role,
+        assignedBy: currentUser.email,
+        reason: assignRoleDto.reason || 'No especificado'
+      },
+      success: true
     };
   }
 }

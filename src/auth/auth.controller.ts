@@ -87,7 +87,10 @@ export class AuthController {
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Registrar nuevo usuario' })
+  @ApiOperation({ 
+    summary: 'Registrar nuevo usuario',
+    description: '🔒 Registro público de usuarios. Todos los usuarios registrados tendrán rol CLIENTE por seguridad. Para asignar roles administrativos, use el endpoint de usuarios con autenticación.'
+  })
   @ApiResponse({ 
     status: 201, 
     description: 'Usuario registrado exitosamente',
@@ -137,8 +140,7 @@ export class AuthController {
         lastName: registerDto.lastName,
         email: registerDto.email,
         password: registerDto.password,
-        phone: registerDto.phone,
-        role: registerDto.role
+        phone: registerDto.phone
       });
       // Remover la contraseña del usuario antes de enviar la respuesta
       const safeResult = {
