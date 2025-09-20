@@ -154,13 +154,56 @@ export class AuthController {
         success: true
       };
     } catch (error) {
+      // Handle specific domain validation errors
       if (error.message === 'User with this email already exists') {
-        throw new ConflictException('El email ya está registrado');
+        throw new ConflictException({
+          message: 'El email ya está registrado',
+          field: 'email',
+          success: false
+        });
       }
-      if (error.message.includes('validation')) {
-        throw new BadRequestException('Datos de registro inválidos');
+      
+      // Handle domain object validation errors
+      if (error.message === 'Invalid email format') {
+        throw new BadRequestException({
+          message: 'El formato del email es inválido',
+          field: 'email',
+          success: false
+        });
       }
-      throw new BadRequestException('Error al registrar el usuario');
+      
+      if (error.message === 'First name is required') {
+        throw new BadRequestException({
+          message: 'El nombre es requerido',
+          field: 'firstName',
+          success: false
+        });
+      }
+      
+      if (error.message === 'Last name is required') {
+        throw new BadRequestException({
+          message: 'El apellido es requerido',
+          field: 'lastName',
+          success: false
+        });
+      }
+      
+      // Handle validation errors with more details
+      if (error.message.includes('validation') || error.response?.message) {
+        throw new BadRequestException({
+          message: error.message || 'Datos de registro inválidos',
+          errors: error.response?.errors || [],
+          success: false
+        });
+      }
+      
+      // Generic error with more context
+      console.error('Registration error:', error);
+      throw new BadRequestException({
+        message: 'Error al registrar el usuario',
+        error: error.message,
+        success: false
+      });
     }
   }
 

@@ -1,4 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import type { IUserRepository } from './user.repository';
 import { User, CreateUserCommand, UpdateUserCommand, UserRole, UserEmail, UserName } from './user.entity';
 import { UserMapper } from './user.mapper';
@@ -14,36 +15,41 @@ export class UserDomainService {
   ) {}
 
   async createUser(command: CreateUserCommand): Promise<User> {
-    // Validaciones de dominio
-    const userEmail = new UserEmail(command.email);
-    const userName = new UserName(command.firstName, command.lastName);
-    
-    // Verificar si el email ya existe
-    const existingUser = await this.userRepository.findByEmail(userEmail.getValue());
-    if (existingUser) {
-      throw new Error('User with this email already exists');
+    try {
+      // Validaciones de dominio
+      const userEmail = new UserEmail(command.email);
+      const userName = new UserName(command.firstName, command.lastName);
+      
+      // Verificar si el email ya existe
+      const existingUser = await this.userRepository.findByEmail(userEmail.getValue());
+      if (existingUser) {
+        throw new Error('User with this email already exists');
+      }
+      
+      // Hash de la contraseña
+      const hashedPassword = await this.passwordService.hashPassword(command.password);
+      
+      // Crear usuario con rol por defecto CLIENTE si no se especifica
+      const user: User = {
+        id: randomUUID(), // Generar UUID válido
+        email: userEmail.getValue(),
+        password: hashedPassword,
+        firstName: userName.getFirstName(),
+        lastName: userName.getLastName(),
+        phone: command.phone,
+        role: command.role || UserRole.CLIENTE,
+        isActive: true,
+        isEmailVerified: false,
+        avatar: command.avatar,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      
+      return await this.userRepository.create(user);
+    } catch (error) {
+      // Re-throw the error to be handled by the controller
+      throw error;
     }
-    
-    // Hash de la contraseña
-    const hashedPassword = await this.passwordService.hashPassword(command.password);
-    
-    // Crear usuario con rol por defecto CLIENTE si no se especifica
-    const user: User = {
-      id: '', // Será generado por la base de datos
-      email: userEmail.getValue(),
-      password: hashedPassword,
-      firstName: userName.getFirstName(),
-      lastName: userName.getLastName(),
-      phone: command.phone,
-      role: command.role || UserRole.CLIENTE,
-      isActive: true,
-      isEmailVerified: false,
-      avatar: command.avatar,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-    
-    return await this.userRepository.create(user);
   }
 
   async updateUser(id: string, command: UpdateUserCommand): Promise<User | null> {
@@ -107,7 +113,7 @@ export class UserDomainService {
     
     // Crear usuario con rol por defecto ADMIN si no se especifica (solo SUPERADMIN puede crear)
     const user: User = {
-      id: '', // Será generado por la base de datos
+      id: randomUUID(), // Generar UUID válido
       email: userEmail.getValue(),
       password: hashedPassword,
       firstName: userName.getFirstName(),
