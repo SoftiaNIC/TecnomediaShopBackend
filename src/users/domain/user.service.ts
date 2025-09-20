@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { randomUUID } from 'crypto';
+import { generateUUID } from '../../utils/uuid.util';
 import type { IUserRepository } from './user.repository';
 import { User, CreateUserCommand, UpdateUserCommand, UserRole, UserEmail, UserName } from './user.entity';
 import { UserMapper } from './user.mapper';
@@ -31,7 +31,7 @@ export class UserDomainService {
       
       // Crear usuario con rol por defecto CLIENTE si no se especifica
       const user: User = {
-        id: randomUUID(), // Generar UUID válido
+        id: generateUUID(), // Generar UUID válido
         email: userEmail.getValue(),
         password: hashedPassword,
         firstName: userName.getFirstName(),
@@ -113,7 +113,7 @@ export class UserDomainService {
     
     // Crear usuario con rol por defecto ADMIN si no se especifica (solo SUPERADMIN puede crear)
     const user: User = {
-      id: randomUUID(), // Generar UUID válido
+      id: generateUUID(), // Generar UUID válido
       email: userEmail.getValue(),
       password: hashedPassword,
       firstName: userName.getFirstName(),
