@@ -43,9 +43,24 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('E-commerce API')
-    .setDescription('API para sistema de e-commerce')
-    .setVersion('1.0')
-    .addBearerAuth()
+    .setDescription('API RESTful completa para sistema de e-commerce con gestión de categorías, productos, usuarios y autenticación. Incluye respuestas descriptivas, validaciones robustas y manejo de errores consistente.')
+    .setVersion('1.0.0')
+    .addBearerAuth({
+      type: 'http',
+      scheme: 'bearer',
+      bearerFormat: 'JWT',
+      name: 'JWT',
+      description: 'Ingresa el token JWT obtenido del endpoint de login',
+      in: 'header',
+    })
+    .addTag('categories', 'Operaciones CRUD para gestión de categorías de productos')
+    .addTag('products', 'Operaciones CRUD para gestión de productos')
+    .addTag('users', 'Operaciones para gestión de usuarios y perfiles')
+    .addTag('auth', 'Autenticación y autorización de usuarios')
+    .setContact('Equipo de Desarrollo', 'https://example.com', 'dev@example.com')
+    .setLicense('MIT', 'https://opensource.org/licenses/MIT')
+    .addServer('http://localhost:3000', 'Servidor de Desarrollo')
+    .addServer('https://api.example.com', 'Servidor de Producción')
     .build();
   
   const document = SwaggerModule.createDocument(app, config);

@@ -1,8 +1,8 @@
-# 📚 Documentación de la API
+# 🚀 Documentación del E-commerce API
 
-> **🏠 [Volver al README Principal](../README.md)** | **🔐 [Autenticación](./auth.md)** | **👥 [Usuarios](./users.md)** | **🛒 [Productos](./products.md)**
+> **🏠 [Volver al README Principal](../README.md)** | **📂 [Categorías](./categories-api.md)** ✨ | **🔐 [Autenticación](./auth.md)** | **👥 [Usuarios](./users.md)** | **🛒 [Productos](./products.md)**
 
-Esta documentación detalla los endpoints y funcionalidades de la API de Ecommerce Template, construida con NestJS y siguiendo una arquitectura Domain-Driven Design (DDD).
+¡Bienvenido a la documentación completa de la API de E-commerce! Esta API RESTful moderna incluye **respuestas descriptivas**, **validaciones robustas** y **documentación interactiva Swagger**.
 
 ## 📋 Tabla de Contenidos
 
@@ -116,6 +116,25 @@ El sistema define tres roles de usuario:
 
 <a name="módulos-disponibles"></a>
 ## 📦 Módulos Disponibles
+
+### 📂 [Módulo de Categorías](./categories-api.md) ✨ **NUEVO Y MEJORADO**
+
+Gestión completa de categorías con **respuestas descriptivas** y **experiencia de usuario mejorada**.
+
+#### 🔧 **Características Destacadas**:
+- ✅ **Respuestas descriptivas** con mensajes en español
+- ✅ **Paginación inteligente** con metadatos completos
+- ✅ **Validaciones robustas** con class-validator
+- ✅ **Manejo de errores consistente** con información útil
+- ✅ **Búsqueda avanzada** por nombre, descripción y slug
+- ✅ **Generación automática** de slugs únicos
+- ✅ **Control de acceso** por roles (ADMIN/SUPERADMIN)
+- ✅ **Documentación Swagger** completa con ejemplos
+- ✅ **Colección Postman** preconfigurada
+
+**[📖 Ver documentación completa →](./categories-api.md)**
+
+---
 
 <a name="-módulo-de-autenticación"></a>
 ### 🔐 [Módulo de Autenticación](./auth.md)
