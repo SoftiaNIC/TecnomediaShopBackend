@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, like, or, desc, asc } from 'drizzle-orm';
-import { categories } from '../schema';
+import { eq, and, like, or, desc, asc, count } from 'drizzle-orm';
+import { categories, products } from '../schema';
 import { DB_CONNECTION } from '../database.module';
 
 export type NewCategory = typeof categories.$inferInsert;
@@ -88,18 +88,18 @@ export class CategoriesRepository {
   }
 
   async count(): Promise<number> {
-    const result = await this.db
-      .select({ count: categories.id })
+    const [result] = await this.db
+      .select({ count: count(categories.id) })
       .from(categories);
-    return result.length;
+    return result.count;
   }
 
   async countActive(): Promise<number> {
-    const result = await this.db
-      .select({ count: categories.id })
+    const [result] = await this.db
+      .select({ count: count(categories.id) })
       .from(categories)
       .where(eq(categories.isActive, true));
-    return result.length;
+    return result.count;
   }
 
   async existsByName(name: string): Promise<boolean> {
@@ -121,15 +121,35 @@ export class CategoriesRepository {
   }
 
   async findWithProductCount(limit = 10, offset = 0): Promise<(Category & { productCount: number })[]> {
-    // This is a more complex query that would require a subquery or join
-    // For now, we'll return basic categories and you can implement product count separately
-    const categoriesList = await this.findAll(limit, offset);
-    
-    // You would typically implement this with a proper SQL join
-    // For simplicity, we're returning the basic structure
-    return categoriesList.map(category => ({
-      ...category,
-      productCount: 0 // This should be calculated with a proper query
+    const result = await this.db
+      .select({
+        id: categories.id,
+        name: categories.name,
+        description: categories.description,
+        slug: categories.slug,
+        isActive: categories.isActive,
+        createdAt: categories.createdAt,
+        updatedAt: categories.updatedAt,
+        productCount: count(products.id),
+      })
+      .from(categories)
+      .leftJoin(products, eq(categories.id, products.categoryId))
+      .groupBy(
+        categories.id,
+        categories.name,
+        categories.description,
+        categories.slug,
+        categories.isActive,
+        categories.createdAt,
+        categories.updatedAt
+      )
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(categories.createdAt));
+
+    return result.map(row => ({
+      ...row,
+      productCount: row.productCount || 0,
     }));
   }
 
@@ -152,5 +172,13 @@ export class CategoriesRepository {
       .where(eq(categories.id, id))
       .returning();
     return category || null;
+  }
+
+  async countProductsByCategory(categoryId: string): Promise<number> {
+    const [result] = await this.db
+      .select({ count: count(products.id) })
+      .from(products)
+      .where(eq(products.categoryId, categoryId));
+    return result.count;
   }
 }
