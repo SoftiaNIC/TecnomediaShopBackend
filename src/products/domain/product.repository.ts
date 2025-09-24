@@ -21,6 +21,17 @@ export interface IProductRepository {
   countActive(): Promise<number>;
   findInStock(limit: number, offset: number): Promise<Product[]>;
   updateStock(id: string, quantity: number): Promise<Product | null>;
+  // Métodos adicionales para endpoints especializados
+  findNewArrivals(cutoffDate: Date, limit: number): Promise<Product[]>;
+  countNewArrivals(cutoffDate: Date): Promise<number>;
+  findBestsellers(limit: number): Promise<Product[]>;
+  countBestsellers(): Promise<number>;
+  findFeaturedProducts(limit: number): Promise<Product[]>;
+  countFeaturedProducts(): Promise<number>;
+  countInStock(): Promise<number>;
+  countOutOfStock(): Promise<number>;
+  calculateTotalInventoryValue(): Promise<number>;
+  calculateAveragePrice(): Promise<number>;
 }
 
 @Injectable()
@@ -116,24 +127,74 @@ export class ProductRepositoryAdapter implements IProductRepository {
     const databaseProduct = await this.productsRepository.updateStock(id, quantity);
     return databaseProduct ? ProductMapper.toDomainEntity(databaseProduct) : null;
   }
+
+  // Métodos adicionales para endpoints especializados
+  async findNewArrivals(cutoffDate: Date, limit: number): Promise<Product[]> {
+    const databaseProducts = await this.productsRepository.findNewArrivals(cutoffDate, limit);
+    return ProductMapper.toDomainEntities(databaseProducts);
+  }
+
+  async countNewArrivals(cutoffDate: Date): Promise<number> {
+    return await this.productsRepository.countNewArrivals(cutoffDate);
+  }
+
+  async findBestsellers(limit: number): Promise<Product[]> {
+    const databaseProducts = await this.productsRepository.findBestsellers(limit);
+    return ProductMapper.toDomainEntities(databaseProducts);
+  }
+
+  async countBestsellers(): Promise<number> {
+    return await this.productsRepository.countBestsellers();
+  }
+
+  async findFeaturedProducts(limit: number): Promise<Product[]> {
+    const databaseProducts = await this.productsRepository.findFeaturedProducts(limit);
+    return ProductMapper.toDomainEntities(databaseProducts);
+  }
+
+  async countFeaturedProducts(): Promise<number> {
+    return await this.productsRepository.countFeaturedProducts();
+  }
+
+  async countInStock(): Promise<number> {
+    return await this.productsRepository.countInStock();
+  }
+
+  async countOutOfStock(): Promise<number> {
+    return await this.productsRepository.countOutOfStock();
+  }
+
+  async calculateTotalInventoryValue(): Promise<number> {
+    return await this.productsRepository.calculateTotalInventoryValue();
+  }
+
+  async calculateAveragePrice(): Promise<number> {
+    return await this.productsRepository.calculateAveragePrice();
+  }
 }
 
 export class ProductMapper {
   static toDomainEntity(databaseProduct: any): Product {
+    const comparePrice = databaseProduct.comparePrice ? (typeof databaseProduct.comparePrice === 'string' ? parseFloat(databaseProduct.comparePrice) : databaseProduct.comparePrice) : undefined;
+    const price = typeof databaseProduct.price === 'string' ? parseFloat(databaseProduct.price) : databaseProduct.price;
+    
     return {
       id: databaseProduct.id,
       name: databaseProduct.name,
       description: databaseProduct.description || '',
       slug: databaseProduct.slug,
       sku: databaseProduct.sku,
-      price: typeof databaseProduct.price === 'string' ? parseFloat(databaseProduct.price) : databaseProduct.price,
+      price: price,
       costPrice: databaseProduct.costPrice ? (typeof databaseProduct.costPrice === 'string' ? parseFloat(databaseProduct.costPrice) : databaseProduct.costPrice) : undefined,
-      comparePrice: databaseProduct.comparePrice ? (typeof databaseProduct.comparePrice === 'string' ? parseFloat(databaseProduct.comparePrice) : databaseProduct.comparePrice) : undefined,
+      comparePrice: comparePrice,
+      discountedPrice: comparePrice && comparePrice < price ? comparePrice : undefined,
       categoryId: databaseProduct.categoryId,
+      categoryName: databaseProduct.categoryName || undefined,
       quantity: databaseProduct.quantity,
       trackQuantity: databaseProduct.trackQuantity,
       allowOutOfStockPurchases: databaseProduct.allowOutOfStockPurchases,
       isActive: databaseProduct.isActive,
+      isFeatured: databaseProduct.isFeatured,
       isDigital: databaseProduct.isDigital,
       barcode: databaseProduct.barcode,
       weight: databaseProduct.weight,
@@ -161,6 +222,7 @@ export class ProductMapper {
       trackQuantity: domainProduct.trackQuantity,
       allowOutOfStockPurchases: domainProduct.allowOutOfStockPurchases,
       isActive: domainProduct.isActive,
+      isFeatured: domainProduct.isFeatured,
       isDigital: domainProduct.isDigital,
       barcode: domainProduct.barcode,
       weight: domainProduct.weight,

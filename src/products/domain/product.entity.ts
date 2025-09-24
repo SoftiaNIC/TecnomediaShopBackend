@@ -7,11 +7,14 @@ export interface Product {
   price: number;
   costPrice?: number;
   comparePrice?: number;
+  discountedPrice?: number; // Calculated field based on comparePrice
   categoryId: string;
+  categoryName?: string; // Joined field from categories table
   quantity: number;
   trackQuantity: boolean;
   allowOutOfStockPurchases: boolean;
   isActive: boolean;
+  isFeatured: boolean;
   isDigital: boolean;
   barcode?: string;
   weight?: number;
@@ -43,6 +46,7 @@ export interface CreateProductCommand {
   trackQuantity?: boolean;
   allowOutOfStockPurchases?: boolean;
   isDigital?: boolean;
+  isFeatured?: boolean;
   barcode?: string;
   weight?: number;
   images?: string[];
@@ -64,6 +68,7 @@ export interface UpdateProductCommand {
   trackQuantity?: boolean;
   allowOutOfStockPurchases?: boolean;
   isActive?: boolean;
+  isFeatured?: boolean;
   isDigital?: boolean;
   barcode?: string;
   weight?: number;

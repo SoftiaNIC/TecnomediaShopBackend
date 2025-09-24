@@ -255,4 +255,40 @@ export class ProductDomainService {
   async findOutOfStockProducts(limit: number = 50): Promise<Product[]> {
     return await this.productRepository.findOutOfStockProducts(limit);
   }
+
+  async findFeaturedProducts(limit: number = 10): Promise<Product[]> {
+    return await this.productRepository.findFeaturedProducts(limit);
+  }
+
+  async countFeaturedProducts(): Promise<number> {
+    return await this.productRepository.countFeaturedProducts();
+  }
+
+  async setProductAsFeatured(id: string, reason?: string): Promise<Product | null> {
+    const product = await this.productRepository.findById(id);
+    if (!product) {
+      throw new Error('Product not found');
+    }
+
+    if (!product.isActive) {
+      throw new Error('Cannot set an inactive product as featured');
+    }
+
+    return await this.productRepository.update(id, { 
+      isFeatured: true, 
+      updatedAt: new Date() 
+    });
+  }
+
+  async removeProductFromFeatured(id: string, reason?: string): Promise<Product | null> {
+    const product = await this.productRepository.findById(id);
+    if (!product) {
+      throw new Error('Product not found');
+    }
+
+    return await this.productRepository.update(id, { 
+      isFeatured: false, 
+      updatedAt: new Date() 
+    });
+  }
 }

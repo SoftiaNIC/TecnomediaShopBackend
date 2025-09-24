@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, like, or, desc, asc, lte } from 'drizzle-orm';
+import { eq, and, like, or, desc, asc, lte, gte, sql } from 'drizzle-orm';
 import { products, categories } from '../schema';
 import { DB_CONNECTION } from '../database.module';
 
@@ -214,5 +214,107 @@ export class ProductsRepository {
       )
       .limit(limit)
       .orderBy(desc(products.createdAt));
+  }
+
+  // Métodos adicionales para endpoints especializados
+  async findNewArrivals(cutoffDate: Date, limit: number): Promise<Product[]> {
+    return await this.db
+      .select()
+      .from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          gte(products.createdAt, cutoffDate)
+        )
+      )
+      .limit(limit)
+      .orderBy(desc(products.createdAt));
+  }
+
+  async countNewArrivals(cutoffDate: Date): Promise<number> {
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          gte(products.createdAt, cutoffDate)
+        )
+      );
+    return result.count;
+  }
+
+  async findBestsellers(limit: number): Promise<Product[]> {
+    // TODO: Implementar lógica real de bestsellers cuando se tenga el módulo de órdenes
+    // Por ahora, retornar productos activos ordenados por nombre (simulado)
+    return await this.db
+      .select()
+      .from(products)
+      .where(eq(products.isActive, true))
+      .limit(limit)
+      .orderBy(desc(products.createdAt));
+  }
+
+  async countBestsellers(): Promise<number> {
+    // TODO: Implementar conteo real de bestsellers cuando se tenga el módulo de órdenes
+    return await this.countActive();
+  }
+
+  async findFeaturedProducts(limit: number): Promise<Product[]> {
+    return await this.db
+      .select()
+      .from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          eq(products.isFeatured, true)
+        )
+      )
+      .limit(limit)
+      .orderBy(desc(products.createdAt));
+  }
+
+  async countFeaturedProducts(): Promise<number> {
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          eq(products.isFeatured, true)
+        )
+      );
+    return result.count;
+  }
+
+  async countOutOfStock(): Promise<number> {
+    const [result] = await this.db
+      .select({ count: sql<number>`count(*)` })
+      .from(products)
+      .where(
+        and(
+          eq(products.isActive, true),
+          eq(products.trackQuantity, true),
+          eq(products.allowOutOfStockPurchases, false),
+          eq(products.quantity, 0)
+        )
+      );
+    return result.count;
+  }
+
+  async calculateTotalInventoryValue(): Promise<number> {
+    const [result] = await this.db
+      .select({ total: sql<number>`SUM(CAST(price AS NUMERIC) * quantity)` })
+      .from(products)
+      .where(eq(products.isActive, true));
+    return result.total || 0;
+  }
+
+  async calculateAveragePrice(): Promise<number> {
+    const [result] = await this.db
+      .select({ average: sql<number>`AVG(CAST(price AS NUMERIC))` })
+      .from(products)
+      .where(eq(products.isActive, true));
+    return result.average || 0;
   }
 }
