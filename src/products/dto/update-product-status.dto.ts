@@ -13,7 +13,7 @@ export class UpdateProductStatusDto {
   @ApiPropertyOptional({
     description: 'Estado detallado del producto',
     enum: ProductStatus,
-    example: ProductStatus.AVAILABLE
+    example: ProductStatus.ACTIVE
   })
   @IsEnum(ProductStatus)
   @IsOptional()
