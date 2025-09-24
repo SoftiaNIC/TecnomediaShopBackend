@@ -12,6 +12,7 @@ El módulo de productos gestiona el catálogo de productos, inventario, categor�
 | **📡 Endpoints CRUD** | Crear, leer, actualizar y eliminar productos |
 | **📦 Gestión de Inventario** | Control de stock y disponibilidad |
 | **🔍 Búsqueda y Filtrado** | Búsqueda por slug, categoría y términos |
+| **⭐ Productos Destacados** | Gestión de productos destacados |
 | **🏷️ SEO y Metadatos** | Optimización para motores de búsqueda |
 | **💡 Mejores Prácticas** | Recomendaciones de uso |
 | **🛠️ Ejemplos de Implementación** | Código de ejemplo |
@@ -31,6 +32,10 @@ El módulo de productos gestiona el catálogo de productos, inventario, categor�
 - [Búsqueda y Filtrado](#búsqueda-y-filtrado)
   - [🏷️ GET /products/category/:categoryId](#-get-productscategorycategoryid) - Productos por categoría
   - [🔎 GET /products/search/:term](#-get-productssearchterm) - Buscar productos
+- [Productos Destacados](#productos-destacados)
+  - [⭐ GET /products/featured](#-get-productsfeatured) - Listar productos destacados
+  - [🌟 PUT /products/:id/featured](#-put-productsidfeatured) - Marcar producto como destacado
+  - [❌ DELETE /products/:id/featured](#-delete-productsidfeatured) - Remover producto de destacados
 - [SEO y Metadatos](#seo-y-metadatos)
 - [Mejores Prácticas](#mejores-prácticas)
 - [Ejemplos de Implementación](#ejemplos-de-implementación)
@@ -669,6 +674,284 @@ export interface UpdateProductCommand {
   metaTitle?: string;              // Opcional
   metaDescription?: string;        // Opcional
   updatedAt?: Date;                // Opcional
+}
+```
+
+<a name="productos-destacados"></a>
+## ⭐ Productos Destacados
+
+<a name="-get-productsfeatured"></a>
+### ⭐ GET /products/featured
+Listar productos destacados.
+
+**Descripción**: Retorna una lista paginada de productos marcados como destacados. Los productos destacados se muestran en la página principal y tienen prioridad en las búsquedas.
+
+**Autenticación**: No requerida (acceso público)
+
+**Parámetros Query**:
+- `limit`: Número máximo de productos a devolver (default: 10, máximo: 100)
+- `offset`: Número de productos a omitir para paginación (default: 0)
+
+**Response Exitoso (200)**:
+```json
+{
+  "success": true,
+  "message": "Se encontraron 5 productos destacados de un total de 12",
+  "data": [
+    {
+      "id": "uuid-del-producto-1",
+      "name": "Laptop Gaming ASUS ROG",
+      "description": "Laptop de alto rendimiento para gaming",
+      "slug": "laptop-gaming-asus-rog",
+      "sku": "LAPTOP-ROG-001",
+      "price": 1299.99,
+      "costPrice": 999.99,
+      "comparePrice": 1499.99,
+      "categoryId": "uuid-categoria-laptops",
+      "quantity": 15,
+      "trackQuantity": true,
+      "allowOutOfStockPurchases": false,
+      "isDigital": false,
+      "isActive": true,
+      "isFeatured": true,
+      "featuredReason": "Producto más vendido del mes",
+      "featuredAt": "2024-01-15T10:30:00Z",
+      "barcode": "1234567890123",
+      "weight": 2.5,
+      "images": [
+        "https://example.com/images/laptop-rog-1.jpg",
+        "https://example.com/images/laptop-rog-2.jpg"
+      ],
+      "tags": ["gaming", "laptop", "asus", "rog"],
+      "metaTitle": "Laptop Gaming ASUS ROG - Mejor Precio",
+      "metaDescription": "Laptop gaming ASUS ROG con última generación. Envío gratis y garantía.",
+      "createdAt": "2024-01-10T08:00:00Z",
+      "updatedAt": "2024-01-15T10:30:00Z"
+    }
+  ],
+  "meta": {
+    "total": 12,
+    "count": 5,
+    "limit": 5,
+    "offset": 0,
+    "hasNext": true,
+    "hasPrevious": false,
+    "filters": {
+      "featured": true
+    }
+  }
+}
+```
+
+**Response Vacío (200)**:
+```json
+{
+  "success": true,
+  "message": "No hay productos destacados disponibles",
+  "data": [],
+  "meta": {
+    "total": 0,
+    "count": 0,
+    "limit": 10,
+    "offset": 0,
+    "hasNext": false,
+    "hasPrevious": false,
+    "filters": {
+      "featured": true
+    }
+  }
+}
+```
+
+<a name="-put-productsidfeatured"></a>
+### 🌟 PUT /products/:id/featured
+Marcar producto como destacado (solo ADMIN o SUPERADMIN).
+
+**Descripción**: Marca un producto específico como destacado. Los productos destacados tienen prioridad en la página principal y búsquedas.
+
+**Autenticación**: Requiere token JWT válido y rol ADMIN o SUPERADMIN
+
+**Headers**:
+```
+Authorization: Bearer <token_jwt>
+Content-Type: application/json
+```
+
+**Parámetros Path**:
+- `id`: UUID del producto a marcar como destacado
+
+**Request Body**:
+```json
+{
+  "reason": "Producto más vendido del mes"
+}
+```
+
+**Response Exitoso (200)**:
+```json
+{
+  "success": true,
+  "message": "Producto marcado como destacado exitosamente: Producto más vendido del mes",
+  "data": {
+    "id": "uuid-del-producto",
+    "name": "Laptop Gaming ASUS ROG",
+    "description": "Laptop de alto rendimiento para gaming",
+    "slug": "laptop-gaming-asus-rog",
+    "sku": "LAPTOP-ROG-001",
+    "price": 1299.99,
+    "costPrice": 999.99,
+    "comparePrice": 1499.99,
+    "categoryId": "uuid-categoria-laptops",
+    "quantity": 15,
+    "trackQuantity": true,
+    "allowOutOfStockPurchases": false,
+    "isDigital": false,
+    "isActive": true,
+    "isFeatured": true,
+    "featuredReason": "Producto más vendido del mes",
+    "featuredAt": "2024-01-15T10:30:00Z",
+    "barcode": "1234567890123",
+    "weight": 2.5,
+    "images": [
+      "https://example.com/images/laptop-rog-1.jpg",
+      "https://example.com/images/laptop-rog-2.jpg"
+    ],
+    "tags": ["gaming", "laptop", "asus", "rog"],
+    "metaTitle": "Laptop Gaming ASUS ROG - Mejor Precio",
+    "metaDescription": "Laptop gaming ASUS ROG con última generación. Envío gratis y garantía.",
+    "createdAt": "2024-01-10T08:00:00Z",
+    "updatedAt": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+**Response Error (404)**:
+```json
+{
+  "statusCode": 404,
+  "message": "Producto con ID uuid-del-producto no encontrado",
+  "error": "Not Found"
+}
+```
+
+**Response Error (409)**:
+```json
+{
+  "statusCode": 409,
+  "message": "No se pudo marcar el producto como destacado: [mensaje de error]",
+  "error": "Conflict"
+}
+```
+
+**Response Error (401)**:
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+**Response Error (403)**:
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource"
+}
+```
+
+<a name="-delete-productsidfeatured"></a>
+### ❌ DELETE /products/:id/featured
+Remover producto de destacados (solo ADMIN o SUPERADMIN).
+
+**Descripción**: Remueve un producto de la lista de productos destacados.
+
+**Autenticación**: Requiere token JWT válido y rol ADMIN o SUPERADMIN
+
+**Headers**:
+```
+Authorization: Bearer <token_jwt>
+Content-Type: application/json
+```
+
+**Parámetros Path**:
+- `id`: UUID del producto a remover de destacados
+
+**Request Body (Opcional)**:
+```json
+{
+  "reason": "Cambio de estrategia de marketing"
+}
+```
+
+**Response Exitoso (200)**:
+```json
+{
+  "success": true,
+  "message": "Producto removido de destacados exitosamente: Cambio de estrategia de marketing",
+  "data": {
+    "id": "uuid-del-producto",
+    "name": "Laptop Gaming ASUS ROG",
+    "description": "Laptop de alto rendimiento para gaming",
+    "slug": "laptop-gaming-asus-rog",
+    "sku": "LAPTOP-ROG-001",
+    "price": 1299.99,
+    "costPrice": 999.99,
+    "comparePrice": 1499.99,
+    "categoryId": "uuid-categoria-laptops",
+    "quantity": 15,
+    "trackQuantity": true,
+    "allowOutOfStockPurchases": false,
+    "isDigital": false,
+    "isActive": true,
+    "isFeatured": false,
+    "featuredReason": null,
+    "featuredAt": null,
+    "barcode": "1234567890123",
+    "weight": 2.5,
+    "images": [
+      "https://example.com/images/laptop-rog-1.jpg",
+      "https://example.com/images/laptop-rog-2.jpg"
+    ],
+    "tags": ["gaming", "laptop", "asus", "rog"],
+    "metaTitle": "Laptop Gaming ASUS ROG - Mejor Precio",
+    "metaDescription": "Laptop gaming ASUS ROG con última generación. Envío gratis y garantía.",
+    "createdAt": "2024-01-10T08:00:00Z",
+    "updatedAt": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+**Response Error (404)**:
+```json
+{
+  "statusCode": 404,
+  "message": "Producto con ID uuid-del-producto no encontrado",
+  "error": "Not Found"
+}
+```
+
+**Response Error (409)**:
+```json
+{
+  "statusCode": 409,
+  "message": "No se pudo remover el producto de destacados: [mensaje de error]",
+  "error": "Conflict"
+}
+```
+
+**Response Error (401)**:
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized"
+}
+```
+
+**Response Error (403)**:
+```json
+{
+  "statusCode": 403,
+  "message": "Forbidden resource"
 }
 ```
 

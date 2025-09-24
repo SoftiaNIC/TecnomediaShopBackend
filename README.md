@@ -64,6 +64,7 @@ Gestiona el catálogo de productos e inventario:
 - Categorías y organización de productos
 - Búsqueda y filtrado avanzado
 - SEO optimizado con slugs y metadatos
+- **⭐ Productos Destacados**: Gestión de productos destacados con roles de acceso controlados
 
 **Documentación detallada**: [docs/products.md](docs/products.md)
 
