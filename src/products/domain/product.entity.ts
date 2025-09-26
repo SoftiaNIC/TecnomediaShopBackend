@@ -41,7 +41,7 @@ export interface CreateProductCommand {
   price: number;
   costPrice?: number;
   comparePrice?: number;
-  categoryId: string;
+  categoryId?: string;
   quantity?: number;
   trackQuantity?: boolean;
   allowOutOfStockPurchases?: boolean;
@@ -49,8 +49,6 @@ export interface CreateProductCommand {
   isFeatured?: boolean;
   barcode?: string;
   weight?: number;
-  images?: string[];
-  tags?: string[];
   metaTitle?: string;
   metaDescription?: string;
 }

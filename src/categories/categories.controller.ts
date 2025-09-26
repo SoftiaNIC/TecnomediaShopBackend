@@ -14,9 +14,9 @@ import {
   CategoriesWithCountResponseDto,
   CategoryResponseDto,
   DeleteResponseDto,
-  SlugGenerationResponseDto,
-  ErrorResponseDto
+  SlugGenerationResponseDto
 } from './dto';
+import { ErrorResponseDto } from '../common/dto/error-response.dto';
 
 @ApiTags('categories')
 @Controller('categories')

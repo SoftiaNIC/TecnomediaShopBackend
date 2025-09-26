@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { Category } from '../../database/repositories/categories.repository';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 
 export class CategoryResponseDto {
   @ApiProperty({ 
@@ -146,23 +147,4 @@ export class SlugGenerationResponseDto {
     isUnique: boolean;
   };
 }
-
-export class ErrorResponseDto {
-  @ApiProperty({ description: 'Indica que la operación falló' })
-  success: false;
-
-  @ApiProperty({ description: 'Mensaje de error descriptivo' })
-  message: string;
-
-  @ApiProperty({ description: 'Código de error HTTP' })
-  statusCode: number;
-
-  @ApiPropertyOptional({ description: 'Detalles adicionales del error' })
-  details?: string[];
-
-  @ApiPropertyOptional({ description: 'Timestamp del error' })
-  timestamp?: Date;
-
-  @ApiPropertyOptional({ description: 'Ruta donde ocurrió el error' })
-  path?: string;
-} 
+ 

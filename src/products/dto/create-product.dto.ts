@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, Min, Max, IsArray, IsUUID, ValidateIf, IsEnum, IsUrl, Matches, MinLength, MaxLength, ArrayNotEmpty, ArrayMinSize, ArrayMaxSize, IsPositive } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsNumber, IsBoolean, Min, Max, IsUUID, ValidateIf, IsEnum, Matches, MinLength, MaxLength, IsPositive } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ProductStatus } from '../domain/product.entity';
 
@@ -7,12 +7,12 @@ export class CreateProductDto {
     description: 'Nombre del producto',
     example: 'iPhone 15 Pro Max',
     minLength: 3,
-    maxLength: 200
+    maxLength: 255
   })
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
-  @MaxLength(200)
+  @MaxLength(255)
   @Matches(/^[a-zA-Z0-9\s\-\&\'\,\.]+$/, {
     message: 'El nombre solo puede contener letras, números, espacios y caracteres básicos de puntuación'
   })
@@ -20,24 +20,22 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Descripción detallada del producto',
-    example: 'El iPhone más avanzado con cámara profesional y chip A17 Pro',
-    maxLength: 5000
+    example: 'El iPhone más avanzado con cámara profesional y chip A17 Pro'
   })
   @IsString()
   @IsOptional()
-  @MaxLength(5000)
   description?: string;
 
   @ApiProperty({
     description: 'SKU único del producto',
     example: 'IPHONE15-PRO-MAX-256GB',
     minLength: 3,
-    maxLength: 50
+    maxLength: 100
   })
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
-  @MaxLength(50)
+  @MaxLength(100)
   @Matches(/^[A-Z0-9\-]+$/, {
     message: 'El SKU solo puede contener letras mayúsculas, números y guiones'
   })
@@ -47,12 +45,12 @@ export class CreateProductDto {
     description: 'URL amigable para el producto',
     example: 'iphone-15-pro-max',
     minLength: 3,
-    maxLength: 100
+    maxLength: 255
   })
   @IsString()
   @IsNotEmpty()
   @MinLength(3)
-  @MaxLength(100)
+  @MaxLength(255)
   @Matches(/^[a-z0-9\-]+$/, {
     message: 'El slug solo puede contener letras minúsculas, números y guiones'
   })
@@ -70,21 +68,34 @@ export class CreateProductDto {
   price: number;
 
   @ApiPropertyOptional({
-    description: 'Precio de descuento (si aplica)',
-    example: 1099.99,
+    description: 'Precio de comparación (precio antes de descuento)',
+    example: 1399.99,
     minimum: 0
   })
   @IsNumber()
   @IsPositive()
   @Min(0.01)
   @Max(999999.99)
-  @ValidateIf((o) => o.discountedPrice !== undefined)
-  discountedPrice?: number;
+  @ValidateIf((o) => o.comparePrice !== undefined)
+  comparePrice?: number;
+
+  @ApiPropertyOptional({
+    description: 'Precio de costo del producto',
+    example: 899.99,
+    minimum: 0
+  })
+  @IsNumber()
+  @IsPositive()
+  @Min(0.01)
+  @Max(999999.99)
+  @ValidateIf((o) => o.costPrice !== undefined)
+  costPrice?: number;
 
   @ApiPropertyOptional({
     description: 'Cantidad en stock',
     example: 50,
-    minimum: 0
+    minimum: 0,
+    default: 0
   })
   @IsNumber()
   @Min(0)
@@ -101,40 +112,6 @@ export class CreateProductDto {
   categoryId?: string;
 
   @ApiPropertyOptional({
-    description: 'IDs de categorías adicionales',
-    example: ['123e4567-e89b-12d3-a456-426614174001', '123e4567-e89b-12d3-a456-426614174002'],
-    type: [String]
-  })
-  @IsArray()
-  @IsUUID('4', { each: true })
-  @IsOptional()
-  additionalCategoryIds?: string[];
-
-  @ApiPropertyOptional({
-    description: 'URL de la imagen principal',
-    example: 'https://example.com/images/iphone15-promax.jpg'
-  })
-  @IsString()
-  @IsOptional()
-  @IsUrl({}, { message: 'La URL de la imagen debe ser una URL válida' })
-  imageUrl?: string;
-
-  @ApiPropertyOptional({
-    description: 'URLs de imágenes adicionales',
-    example: [
-      'https://example.com/images/iphone15-promax-1.jpg',
-      'https://example.com/images/iphone15-promax-2.jpg'
-    ],
-    type: [String]
-  })
-  @IsArray()
-  @IsString({ each: true })
-  @IsUrl({}, { each: true, message: 'Cada URL de imagen debe ser una URL válida' })
-  @ArrayMaxSize(10, { message: 'Máximo 10 imágenes adicionales permitidas' })
-  @IsOptional()
-  additionalImages?: string[];
-
-  @ApiPropertyOptional({
     description: 'Peso del producto en gramos',
     example: 221,
     minimum: 0
@@ -146,34 +123,13 @@ export class CreateProductDto {
   weight?: number;
 
   @ApiPropertyOptional({
-    description: 'Dimensiones del producto (formato: LxWxH en cm)',
-    example: '15.97x7.69x0.82'
+    description: 'Código de barras del producto',
+    example: '1234567890123'
   })
   @IsString()
   @IsOptional()
-  @Matches(/^\d+(\.\d+)?x\d+(\.\d+)?x\d+(\.\d+)?$/, {
-    message: 'Las dimensiones deben estar en formato LxWxH (ej: 15.97x7.69x0.82)'
-  })
-  dimensions?: string;
-
-  @ApiPropertyOptional({
-    description: 'Marca del producto',
-    example: 'Apple'
-  })
-  @IsString()
-  @IsOptional()
-  brand?: string;
-
-  @ApiPropertyOptional({
-    description: 'Etiquetas o tags del producto',
-    example: ['smartphone', 'apple', 'premium', '5g'],
-    type: [String]
-  })
-  @IsArray()
-  @IsString({ each: true })
-  @ArrayMaxSize(20, { message: 'Máximo 20 etiquetas permitidas' })
-  @IsOptional()
-  tags?: string[];
+  @MaxLength(100)
+  barcode?: string;
 
   @ApiPropertyOptional({
     description: 'Indica si el producto está activo',
@@ -182,7 +138,7 @@ export class CreateProductDto {
   })
   @IsBoolean()
   @IsOptional()
-  isActive?: boolean
+  isActive?: boolean;
 
   @ApiPropertyOptional({
     description: 'Indica si el producto es destacado',
@@ -221,32 +177,29 @@ export class CreateProductDto {
   isDigital?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Stock mínimo para alerta',
-    example: 10,
-    minimum: 0
+    description: 'Título SEO para el producto',
+    example: 'iPhone 15 Pro Max - El smartphone más avanzado'
   })
-  @IsNumber()
-  @Min(0)
-  @Max(1000)
+  @IsString()
   @IsOptional()
-  lowStockThreshold?: number;
+  @MaxLength(255)
+  metaTitle?: string;
+
+  @ApiPropertyOptional({
+    description: 'Descripción SEO para el producto',
+    example: 'Descubre el iPhone 15 Pro Max con cámara profesional, chip A17 Pro y diseño innovador.'
+  })
+  @IsString()
+  @IsOptional()
+  metaDescription?: string;
 
   @ApiPropertyOptional({
     description: 'Estado del producto',
     enum: ProductStatus,
-    example: ProductStatus.ACTIVE
+    example: ProductStatus.ACTIVE,
+    default: ProductStatus.ACTIVE
   })
   @IsEnum(ProductStatus)
   @IsOptional()
   status?: ProductStatus;
-
-  @ApiPropertyOptional({
-    description: 'Notas internas del producto',
-    example: 'Producto de alta demanda, reponer stock mensualmente',
-    maxLength: 1000
-  })
-  @IsString()
-  @IsOptional()
-  @MaxLength(1000)
-  notes?: string;
 }

@@ -1,4 +1,5 @@
 export { CreateCategoryDto } from './create-category.dto';
 export { UpdateCategoryDto } from './update-category.dto';
 export { UpdateCategoryStatusDto } from './update-category-status.dto';
-export * from './response.dto'; 
+export * from './response.dto';
+export { ErrorResponseDto } from '../../common/dto/error-response.dto'; 

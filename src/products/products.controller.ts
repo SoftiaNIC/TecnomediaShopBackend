@@ -10,6 +10,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { UpdateProductStockDto } from './dto/update-product-stock.dto';
 import { GenerateSlugDto } from './dto/generate-slug.dto';
+import { AssignCategoryDto, RemoveCategoryDto, UpdateCategoryOrderDto } from './dto/assign-category.dto';
 import { 
   ProductResponseDto,
   ProductsListResponseDto,
@@ -19,9 +20,15 @@ import {
   PriceUpdateResponseDto,
   ProductSearchResponseDto,
   DeleteProductResponseDto,
-  SlugGenerationResponseDto,
-  ErrorResponseDto
+  SlugGenerationResponseDto
 } from './dto/response.dto';
+import { ErrorResponseDto } from '../common/dto/error-response.dto';
+import { 
+  CategoryAssignmentResponse,
+  CategoryRemovalResponse,
+  CategoryOrderUpdateResponse,
+  ProductCategoriesResponse
+} from './dto/category-response.dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -831,5 +838,165 @@ export class ProductsController {
   })
   async generateSlug(@Body() generateSlugDto: GenerateSlugDto): Promise<SlugGenerationResponseDto> {
     return await this.productsService.generateSlugWithResponse(generateSlugDto.name);
+  }
+
+  // Endpoints para manejo de categorías de productos
+  @Post(':id/categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Asignar categorías a un producto (ADMIN o SUPERADMIN)',
+    description: 'Asigna una o múltiples categorías a un producto existente. Permite especificar una categoría principal y definir el orden de visualización de las categorías.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto al que se le asignarán las categorías',
+    type: 'string'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Categorías asignadas exitosamente. Retorna detalles de la asignación incluyendo IDs de categorías asignadas y la categoría principal establecida.',
+    type: CategoryAssignmentResponse
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Datos de entrada inválidos. Los IDs de categorías son inválidos o la categoría principal no está incluida en la lista.',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'No autorizado. Token JWT inválido o no proporcionado.',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'Prohibido. El usuario no tiene los permisos necesarios (se requiere rol ADMIN o SUPERADMIN).',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado. El ID del producto no existe en el sistema.',
+    type: ErrorResponseDto
+  })
+  async assignCategories(
+    @Param('id') id: string,
+    @Body() assignCategoryDto: AssignCategoryDto
+  ): Promise<CategoryAssignmentResponse> {
+    return await this.productsService.assignCategoriesToProduct(id, assignCategoryDto);
+  }
+
+  @Get(':id/categories')
+  @ApiOperation({ 
+    summary: 'Obtener categorías de un producto',
+    description: 'Retorna todas las categorías asignadas a un producto específico, incluyendo información sobre cuál es la categoría principal y el orden de visualización.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto del cual se obtendrán las categorías',
+    type: 'string'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Categorías obtenidas exitosamente. Retorna lista de categorías con sus detalles de asignación.',
+    type: ProductCategoriesResponse
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado. El ID del producto no existe en el sistema.',
+    type: ErrorResponseDto
+  })
+  async getProductCategories(@Param('id') id: string): Promise<ProductCategoriesResponse> {
+    return await this.productsService.getProductCategories(id);
+  }
+
+  @Put(':id/categories/order')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Actualizar orden de categorías de un producto (ADMIN o SUPERADMIN)',
+    description: 'Actualiza el orden de visualización y el estado de categoría principal para una categoría específica de un producto.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto cuya categoría se actualizará',
+    type: 'string'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Orden de categoría actualizado exitosamente. Retorna detalles de la actualización realizada.',
+    type: CategoryOrderUpdateResponse
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Datos de entrada inválidos. La categoría no está asignada al producto o los datos son incorrectos.',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'No autorizado. Token JWT inválido o no proporcionado.',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'Prohibido. El usuario no tiene los permisos necesarios (se requiere rol ADMIN o SUPERADMIN).',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto o categoría no encontrados. El ID del producto o la categoría no existen.',
+    type: ErrorResponseDto
+  })
+  async updateCategoryOrder(
+    @Param('id') id: string,
+    @Body() updateCategoryOrderDto: UpdateCategoryOrderDto
+  ): Promise<CategoryOrderUpdateResponse> {
+    return await this.productsService.updateCategoryOrder(id, updateCategoryOrderDto);
+  }
+
+  @Delete(':id/categories')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Remover categorías de un producto (ADMIN o SUPERADMIN)',
+    description: 'Remueve una o múltiples categorías de un producto. No permite remover la categoría principal si quedan otras categorías asignadas sin asignar una nueva principal primero.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto del cual se removerán las categorías',
+    type: 'string'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Categorías removidas exitosamente. Retorna detalles de las categorías removidas.',
+    type: CategoryRemovalResponse
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: 'Datos de entrada inválidos. Se intentó remover la categoría principal sin asignar una nueva o las categorías no están asignadas.',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'No autorizado. Token JWT inválido o no proporcionado.',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: 'Prohibido. El usuario no tiene los permisos necesarios (se requiere rol ADMIN o SUPERADMIN).',
+    type: ErrorResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado. El ID del producto no existe en el sistema.',
+    type: ErrorResponseDto
+  })
+  async removeCategories(
+    @Param('id') id: string,
+    @Body() removeCategoryDto: RemoveCategoryDto
+  ): Promise<CategoryRemovalResponse> {
+    return await this.productsService.removeCategoriesFromProduct(id, removeCategoryDto);
   }
 }

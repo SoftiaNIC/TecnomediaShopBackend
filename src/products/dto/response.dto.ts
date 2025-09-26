@@ -1,5 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import type { Product } from '../domain/product.entity';
+import { ErrorResponseDto } from '../../common/dto/error-response.dto';
 
 export class ProductResponseDto {
   @ApiProperty({ 
@@ -235,38 +236,3 @@ export class SlugGenerationResponseDto {
   };
 }
 
-export class ErrorResponseDto {
-  @ApiProperty({ 
-    description: 'Indica si la operación fue exitosa',
-    example: false
-  })
-  success: boolean;
-
-  @ApiProperty({ 
-    description: 'Mensaje de error',
-    example: 'Ya existe un producto con este SKU'
-  })
-  message: string;
-
-  @ApiPropertyOptional({ 
-    description: 'Código de error',
-    example: 'CONFLICT'
-  })
-  errorCode?: string;
-
-  @ApiPropertyOptional({ 
-    description: 'Detalles adicionales del error',
-    example: {
-      field: 'sku',
-      value: 'IPHONE15-PRO-MAX-256GB',
-      conflictType: 'duplicate_sku'
-    }
-  })
-  details?: Record<string, any>;
-
-  @ApiPropertyOptional({ 
-    description: 'Timestamp del error',
-    example: '2024-01-15T10:30:00.000Z'
-  })
-  timestamp?: string;
-}

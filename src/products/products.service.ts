@@ -1,14 +1,20 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
 import { ProductDomainService } from './domain/product.service';
 import { ProductRepositoryAdapter } from './domain/product.repository';
+import { ProductCategoryDomainService } from './domain/product-category.service';
+import { ProductCategoryRepositoryAdapter } from './domain/product-category.repository';
 import { Product, CreateProductCommand, UpdateProductCommand, ProductStatus } from './domain/product.entity';
+import { ProductMapper } from './mapper/product.mapper';
 import { 
   CreateProductDto, 
   UpdateProductDto, 
   UpdateProductStockDto,
   UpdateProductStatusDto,
   UpdateProductPriceDto,
-  UpdateProductFeaturedDto
+  UpdateProductFeaturedDto,
+  AssignCategoryDto,
+  RemoveCategoryDto,
+  UpdateCategoryOrderDto
 } from './dto';
 import { 
   ProductResponseDto, 
@@ -21,12 +27,21 @@ import {
   ProductSearchResponseDto,
   SlugGenerationResponseDto
 } from './dto/response.dto';
+import { 
+  CategoryAssignmentResponse,
+  CategoryRemovalResponse,
+  CategoryOrderUpdateResponse,
+  ProductCategoriesResponse
+} from './dto/category-response.dto';
 
 @Injectable()
 export class ProductsService {
   constructor(
     private readonly productDomainService: ProductDomainService,
     private readonly productRepository: ProductRepositoryAdapter,
+    private readonly productMapper: ProductMapper,
+    private readonly productCategoryDomainService: ProductCategoryDomainService,
+    private readonly productCategoryRepository: ProductCategoryRepositoryAdapter,
   ) {}
 
   // Métodos originales (mantenidos para compatibilidad)
@@ -124,7 +139,8 @@ export class ProductsService {
 
   // Métodos RESTless con respuestas enriquecidas
   async createWithResponse(productData: CreateProductDto): Promise<ProductResponseDto> {
-    const product = await this.create(productData as CreateProductCommand);
+    const createCommand = this.productMapper.toCreateCommand(productData);
+    const product = await this.create(createCommand);
     
     return {
       success: true,
@@ -764,6 +780,99 @@ export class ProductsService {
         throw error;
       }
       throw new ConflictException(`No se pudo remover el producto de destacados: ${error.message}`);
+    }
+  }
+
+  // Métodos para manejo de categorías de productos
+  async assignCategoriesToProduct(productId: string, assignCategoryDto: AssignCategoryDto): Promise<CategoryAssignmentResponse> {
+    try {
+      await this.productCategoryDomainService.assignCategoriesToProduct(
+        productId,
+        assignCategoryDto.categoryIds,
+        assignCategoryDto.primaryCategoryId,
+        assignCategoryDto.displayOrders
+      );
+
+      return {
+        success: true,
+        message: 'Categorías asignadas exitosamente al producto',
+        productId,
+        assignedCategoryIds: assignCategoryDto.categoryIds,
+        primaryCategoryId: assignCategoryDto.primaryCategoryId
+      };
+    } catch (error) {
+      throw new ConflictException(`No se pudieron asignar las categorías: ${error.message}`);
+    }
+  }
+
+  async getProductCategories(productId: string): Promise<ProductCategoriesResponse> {
+    try {
+      const categories = await this.productCategoryDomainService.getProductCategories(productId);
+      // Transformar las categorías al formato esperado por ProductCategoryInfo
+      const categoryInfos = categories.map(cat => ({
+        id: cat.categoryId,
+        name: cat.categoryName || '',
+        slug: cat.categorySlug || '',
+        isPrimary: cat.isPrimary,
+        displayOrder: cat.displayOrder,
+        isActive: cat.categoryIsActive ?? true
+      }));
+
+      return {
+        success: true,
+        message: 'Categorías del producto obtenidas exitosamente',
+        productId,
+        categories: categoryInfos
+      };
+    } catch (error) {
+      throw new ConflictException(`No se pudieron obtener las categorías: ${error.message}`);
+    }
+  }
+
+  async updateCategoryOrder(productId: string, updateCategoryOrderDto: UpdateCategoryOrderDto): Promise<CategoryOrderUpdateResponse> {
+    try {
+      await this.productCategoryDomainService.updateCategoryOrder(
+        productId,
+        updateCategoryOrderDto.categoryId,
+        updateCategoryOrderDto.displayOrder,
+        updateCategoryOrderDto.isPrimary
+      );
+
+      return {
+        success: true,
+        message: 'Orden de categoría actualizado exitosamente',
+        productId,
+        categoryId: updateCategoryOrderDto.categoryId,
+        newDisplayOrder: updateCategoryOrderDto.displayOrder,
+        isNowPrimary: updateCategoryOrderDto.isPrimary
+      };
+    } catch (error) {
+      throw new ConflictException(`No se pudo actualizar el orden de la categoría: ${error.message}`);
+    }
+  }
+
+  async removeCategoriesFromProduct(productId: string, removeCategoryDto: RemoveCategoryDto): Promise<CategoryRemovalResponse> {
+    try {
+      // Obtener categorías actuales antes de remover
+      const currentCategories = await this.productCategoryDomainService.getProductCategories(productId);
+      const currentCount = currentCategories.length;
+      
+      await this.productCategoryDomainService.removeCategoriesFromProduct(
+        productId,
+        removeCategoryDto.categoryIds
+      );
+
+      const remainingCount = currentCount - removeCategoryDto.categoryIds.length;
+
+      return {
+        success: true,
+        message: 'Categorías removidas exitosamente del producto',
+        productId,
+        removedCategoryIds: removeCategoryDto.categoryIds,
+        remainingCategoriesCount: Math.max(0, remainingCount)
+      };
+    } catch (error) {
+      throw new ConflictException(`No se pudieron remover las categorías: ${error.message}`);
     }
   }
 }

@@ -51,3 +51,32 @@ export const products = pgTable("products", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// Tabla de relación producto-categorías (muchos a muchos)
+export const productCategories = pgTable("product_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  isPrimary: boolean("is_primary").default(false).notNull(), // Indica si es la categoría principal
+  displayOrder: integer("display_order").default(0).notNull(), // Orden de visualización
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tabla de imágenes de productos
+export const productImages = pgTable("product_images", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  url: varchar("url", { length: 1000 }), // URL externa de la imagen
+  imageData: text("image_data"), // Datos binarios de la imagen en base64
+  altText: varchar("alt_text", { length: 255 }),
+  title: varchar("title", { length: 255 }),
+  isPrimary: boolean("is_primary").default(false).notNull(),
+  displayOrder: integer("display_order").default(0).notNull(),
+  fileSize: integer("file_size"), // Tamaño en bytes
+  mimeType: varchar("mime_type", { length: 100 }), // image/jpeg, image/png, etc.
+  width: integer("width"), // Ancho en píxeles
+  height: integer("height"), // Alto en píxeles
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ProductsRepository } from '../../database/repositories/products.repository';
+import { CategoriesRepository } from '../../database/repositories/categories.repository';
 import { Product, CreateProductCommand, UpdateProductCommand } from './product.entity';
 
 export interface IProductRepository {
@@ -36,7 +37,10 @@ export interface IProductRepository {
 
 @Injectable()
 export class ProductRepositoryAdapter implements IProductRepository {
-  constructor(private readonly productsRepository: ProductsRepository) {}
+  constructor(
+    private readonly productsRepository: ProductsRepository,
+    private readonly categoriesRepository: CategoriesRepository
+  ) {}
 
   async create(productData: CreateProductCommand): Promise<Product> {
     const databaseProductData = ProductMapper.toDatabaseProduct(productData);
@@ -85,10 +89,9 @@ export class ProductRepositoryAdapter implements IProductRepository {
   }
 
   async categoryExists(categoryId: string): Promise<boolean> {
-    // Este método necesitaría ser implementado en el repositorio de productos o categories
-    // Por ahora, asumimos que existe si podemos encontrar productos con esa categoría
-    const productsInCategory = await this.productsRepository.findByCategory(categoryId, 1, 0);
-    return productsInCategory.length > 0;
+    // Verificar si la categoría existe usando el repositorio de categorías
+    const category = await this.categoriesRepository.findById(categoryId);
+    return category !== null;
   }
 
   async findActiveProducts(limit: number, offset: number): Promise<Product[]> {

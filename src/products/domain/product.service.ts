@@ -41,10 +41,12 @@ export class ProductDomainService {
       throw new Error('Product with this SKU already exists');
     }
 
-    // Verificar si la categoría existe
-    const categoryExists = await this.productRepository.categoryExists(command.categoryId);
-    if (!categoryExists) {
-      throw new Error('Category does not exist');
+    // Verificar si la categoría existe (si se proporcionó)
+    if (command.categoryId) {
+      const categoryExists = await this.productRepository.categoryExists(command.categoryId);
+      if (!categoryExists) {
+        throw new Error('Category does not exist');
+      }
     }
 
     // Crear el producto con valores por defecto
@@ -62,8 +64,6 @@ export class ProductDomainService {
       allowOutOfStockPurchases: command.allowOutOfStockPurchases || false,
       isActive: true,
       isDigital: command.isDigital || false,
-      images: command.images || [],
-      tags: command.tags || [],
       metaTitle: command.metaTitle,
       metaDescription: command.metaDescription,
     };

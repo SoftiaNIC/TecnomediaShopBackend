@@ -4,4 +4,7 @@ export * from './update-product-stock.dto';
 export * from './update-product-status.dto';
 export * from './update-product-price.dto';
 export * from './update-product-featured.dto';
+export * from './assign-category.dto';
+export * from './category-response.dto';
 export * from './response.dto';
+export { ErrorResponseDto } from '../../common/dto/error-response.dto';

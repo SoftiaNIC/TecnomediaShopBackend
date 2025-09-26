@@ -2,11 +2,15 @@ import { Module } from '@nestjs/common';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { DatabaseModule } from '../database/database.module';
-import { ProductsRepository } from '../database/repositories';
+import { ProductsRepository, CategoriesRepository } from '../database/repositories';
 import { ProductDomainService } from './domain/product.service';
 import { ProductRepositoryAdapter } from './domain/product.repository';
+import { ProductCategoryDomainService } from './domain/product-category.service';
+import { ProductCategoryRepositoryAdapter } from './domain/product-category.repository';
+import { ProductMapper } from './mapper/product.mapper';
 
 const PRODUCT_REPOSITORY_TOKEN = 'PRODUCT_REPOSITORY_TOKEN';
+const PRODUCT_CATEGORY_REPOSITORY_TOKEN = 'PRODUCT_CATEGORY_REPOSITORY_TOKEN';
 
 @Module({
   imports: [DatabaseModule],
@@ -14,13 +18,21 @@ const PRODUCT_REPOSITORY_TOKEN = 'PRODUCT_REPOSITORY_TOKEN';
   providers: [
     ProductsService, 
     ProductsRepository, 
+    CategoriesRepository,
     ProductDomainService, 
+    ProductCategoryDomainService,
+    ProductCategoryRepositoryAdapter,
+    ProductRepositoryAdapter,
+    ProductMapper,
     {
       provide: PRODUCT_REPOSITORY_TOKEN,
       useClass: ProductRepositoryAdapter,
     },
-    ProductRepositoryAdapter
+    {
+      provide: PRODUCT_CATEGORY_REPOSITORY_TOKEN,
+      useClass: ProductCategoryRepositoryAdapter,
+    }
   ],
-  exports: [ProductsService, ProductsRepository, ProductDomainService, ProductRepositoryAdapter],
+  exports: [ProductsService, ProductsRepository, ProductDomainService, ProductCategoryDomainService, ProductCategoryRepositoryAdapter, ProductRepositoryAdapter],
 })
 export class ProductsModule {}
