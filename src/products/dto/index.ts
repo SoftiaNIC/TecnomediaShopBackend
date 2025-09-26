@@ -7,4 +7,7 @@ export * from './update-product-featured.dto';
 export * from './assign-category.dto';
 export * from './category-response.dto';
 export * from './response.dto';
+export * from './create-product-image.dto';
+export * from './update-product-image.dto';
+export * from './product-image-response.dto';
 export { ErrorResponseDto } from '../../common/dto/error-response.dto';

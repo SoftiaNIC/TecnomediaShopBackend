@@ -61,83 +61,87 @@ Authorization: Bearer <token_jwt>
 **Request Body**:
 ```json
 {
-  "name": "Laptop Gaming ASUS ROG",
-  "description": "Laptop de alto rendimiento para gaming",
-  "slug": "laptop-gaming-asus-rog",
-  "sku": "LAPTOP-ROG-001",
-  "price": 1299.99,
-  "costPrice": 999.99,
-  "comparePrice": 1499.99,
-  "categoryId": "uuid-de-categoria",
+  "name": "iPhone 15 Pro Max",
+  "description": "El iPhone más avanzado con cámara profesional y chip A17 Pro",
+  "slug": "iphone-15-pro-max",
+  "sku": "IPHONE15-PRO-MAX-256GB",
+  "price": 1199.99,
+  "comparePrice": 1399.99,
+  "costPrice": 899.99,
   "quantity": 50,
+  "categoryId": "43bdd13f-f6f4-4ff8-b886-e0e48a29fa0e",
+  "weight": 221,
+  "barcode": "1234567890123",
+  "isActive": true,
+  "isFeatured": false,
   "trackQuantity": true,
   "allowOutOfStockPurchases": false,
-  "isActive": true,
   "isDigital": false,
-  "barcode": "1234567890123",
-  "weight": 2.5,
-  "images": ["image1.jpg", "image2.jpg"],
-  "tags": ["gaming", "laptop", "asus"],
-  "metaTitle": "Laptop Gaming ASUS ROG - Mejor rendimiento",
-  "metaDescription": "Laptop gaming de alto rendimiento con última tecnología"
+  "metaTitle": "iPhone 15 Pro Max - El smartphone más avanzado",
+  "metaDescription": "Descubre el iPhone 15 Pro Max con cámara profesional, chip A17 Pro y diseño innovador.",
+  "status": "active"
 }
 ```
 
 **Campos Obligatorios**:
-- `name`: Nombre del producto (string, 3-100 caracteres)
-- `description`: Descripción del producto (string)
-- `slug`: Slug URL amigable (string, único)
-- `sku`: SKU del producto (string, 3-50 caracteres, único)
-- `price`: Precio del producto (number, positivo, máximo 999,999.99)
-- `categoryId`: ID de la categoría (string, UUID)
+- `name`: Nombre del producto (string, 3-255 caracteres)
+- `slug`: Slug URL amigable (string, 3-255 caracteres, único, solo minúsculas, números y guiones)
+- `sku`: SKU del producto (string, 3-100 caracteres, único, solo mayúsculas, números y guiones)
+- `price`: Precio del producto (number, positivo, 0.01 - 999,999.99)
 
 **Campos Opcionales**:
-- `costPrice`: Precio de costo (number, positivo)
-- `comparePrice`: Precio de comparación (number, positivo)
-- `quantity`: Cantidad en stock (number, default: 0)
+- `description`: Descripción del producto (string)
+- `comparePrice`: Precio de comparación (number, positivo, 0.01 - 999,999.99)
+- `costPrice`: Precio de costo (number, positivo, 0.01 - 999,999.99)
+- `quantity`: Cantidad en stock (number, 0 - 999,999, default: 0)
+- `categoryId`: ID de la categoría (string, UUID)
+- `weight`: Peso del producto en gramos (number, 0 - 100,000)
+- `barcode`: Código de barras (string, máximo 100 caracteres)
+- `isActive`: Estado de activación (boolean, default: true)
+- `isFeatured`: Indica si es producto destacado (boolean, default: false)
 - `trackQuantity`: Habilitar seguimiento de inventario (boolean, default: true)
 - `allowOutOfStockPurchases`: Permitir compras sin stock (boolean, default: false)
-- `isActive`: Estado de activación (boolean, default: true)
 - `isDigital`: Es producto digital (boolean, default: false)
-- `barcode`: Código de barras (string)
-- `weight`: Peso del producto (number, kg)
-- `images`: Array de URLs de imágenes (string[])
-- `tags`: Array de etiquetas (string[])
-- `metaTitle`: Título para SEO (string)
-- `metaDescription`: Descripción para SEO (string)
+- `metaTitle`: Título para SEO (string, máximo 255 caracteres)
+- `status`: Estado del producto (enum: 'active', 'inactive', 'draft', default: 'active')
 
 **Response Exitoso (201)**:
 ```json
 {
-  "id": "uuid-del-producto",
-  "name": "Laptop Gaming ASUS ROG",
-  "description": "Laptop de alto rendimiento para gaming",
-  "slug": "laptop-gaming-asus-rog",
-  "sku": "LAPTOP-ROG-001",
-  "price": 1299.99,
-  "costPrice": 999.99,
-  "comparePrice": 1499.99,
-  "categoryId": "uuid-de-categoria",
-  "quantity": 50,
-  "trackQuantity": true,
-  "allowOutOfStockPurchases": false,
-  "isActive": true,
-  "isDigital": false,
-  "barcode": "1234567890123",
-  "weight": 2.5,
-  "images": ["image1.jpg", "image2.jpg"],
-  "tags": ["gaming", "laptop", "asus"],
-  "metaTitle": "Laptop Gaming ASUS ROG - Mejor rendimiento",
-  "metaDescription": "Laptop gaming de alto rendimiento con última tecnología",
-  "createdAt": "2024-01-01T00:00:00.000Z",
-  "updatedAt": "2024-01-01T00:00:00.000Z"
+  "success": true,
+  "message": "Producto creado exitosamente",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "iPhone 15 Pro Max",
+    "description": "El iPhone más avanzado con cámara profesional y chip A17 Pro",
+    "slug": "iphone-15-pro-max",
+    "sku": "IPHONE15-PRO-MAX-256GB",
+    "price": 1199.99,
+    "comparePrice": 1399.99,
+    "costPrice": 899.99,
+    "quantity": 50,
+    "categoryId": "43bdd13f-f6f4-4ff8-b886-e0e48a29fa0e",
+    "weight": 221,
+    "barcode": "1234567890123",
+    "isActive": true,
+    "isFeatured": false,
+    "trackQuantity": true,
+    "allowOutOfStockPurchases": false,
+    "isDigital": false,
+    "metaTitle": "iPhone 15 Pro Max - El smartphone más avanzado",
+    "metaDescription": "Descubre el iPhone 15 Pro Max con cámara profesional, chip A17 Pro y diseño innovador.",
+    "status": "active",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
 }
 ```
 
-**Errores**:
+**Posibles Errores**:
 - `400 Bad Request`: Datos de entrada inválidos
 - `401 Unauthorized`: Token de autorización inválido
 - `403 Forbidden`: No tiene permisos para crear productos
+- `409 Conflict`: SKU o slug ya existen
 
 ---
 
