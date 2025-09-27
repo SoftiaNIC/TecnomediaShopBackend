@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query, HttpStatus, NotFoundException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
@@ -29,6 +29,14 @@ import {
   CategoryOrderUpdateResponse,
   ProductCategoriesResponse
 } from './dto/category-response.dto';
+import { 
+  CreateProductImageDto,
+  UpdateProductImageDto,
+  ProductImageResponseDto,
+  ProductImagesListResponseDto,
+  SetPrimaryImageDto,
+  UpdateImageOrderDto
+} from './dto';
 
 @ApiTags('products')
 @Controller('products')
@@ -998,5 +1006,439 @@ export class ProductsController {
     @Body() removeCategoryDto: RemoveCategoryDto
   ): Promise<CategoryRemovalResponse> {
     return await this.productsService.removeCategoriesFromProduct(id, removeCategoryDto);
+  }
+
+  // Endpoints para gestión de imágenes de productos
+  @Post(':id/images')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Agregar una imagen a un producto (ADMIN o SUPERADMIN)',
+    description: 'Agrega una nueva imagen a un producto existente. Si es la primera imagen del producto, se marcará automáticamente como principal.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Imagen agregada exitosamente',
+    type: ProductImageResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado',
+    type: ErrorResponseDto
+  })
+  async addProductImage(
+    @Param('id') id: string,
+    @Body() imageData: CreateProductImageDto
+  ): Promise<ProductImageResponseDto> {
+    const image = await this.productsService.addProductImage(id, imageData);
+    return {
+      id: image.id,
+      productId: image.productId,
+      url: image.url,
+      imageDataUrl: image.imageData,
+      altText: image.altText,
+      title: image.title,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder,
+      fileSize: image.fileSize,
+      fileSizeFormatted: image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(2)} MB` : undefined,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      dimensions: image.width && image.height ? `${image.width}x${image.height}` : undefined,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt
+    };
+  }
+
+  @Post(':id/images/batch')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Agregar múltiples imágenes a un producto (ADMIN o SUPERADMIN)',
+    description: 'Agrega múltiples imágenes a un producto existente en una sola solicitud.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Imágenes agregadas exitosamente',
+    type: ProductImagesListResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado',
+    type: ErrorResponseDto
+  })
+  async addMultipleProductImages(
+    @Param('id') id: string,
+    @Body() imagesData: CreateProductImageDto[]
+  ): Promise<ProductImagesListResponseDto> {
+    const images = await this.productsService.addMultipleProductImages(id, imagesData);
+    const imageDtos = images.map(image => ({
+      id: image.id,
+      productId: image.productId,
+      url: image.url,
+      imageDataUrl: image.imageData,
+      altText: image.altText,
+      title: image.title,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder,
+      fileSize: image.fileSize,
+      fileSizeFormatted: image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(2)} MB` : undefined,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      dimensions: image.width && image.height ? `${image.width}x${image.height}` : undefined,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt
+    }));
+    
+    return {
+      success: true,
+      message: 'Imágenes agregadas exitosamente',
+      productId: id,
+      data: imageDtos,
+      total: imageDtos.length,
+      primaryCount: imageDtos.filter(img => img.isPrimary).length
+    };
+  }
+
+  @Get(':id/images')
+  @ApiOperation({ 
+    summary: 'Obtener imágenes de un producto',
+    description: 'Retorna todas las imágenes asociadas a un producto específico.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Lista de imágenes obtenida exitosamente',
+    type: ProductImagesListResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado',
+    type: ErrorResponseDto
+  })
+  async getProductImages(@Param('id') id: string): Promise<ProductImagesListResponseDto> {
+    const images = await this.productsService.getProductImages(id);
+    const imageDtos = images.map(image => ({
+      id: image.id,
+      productId: image.productId,
+      url: image.url,
+      imageDataUrl: image.imageData,
+      altText: image.altText,
+      title: image.title,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder,
+      fileSize: image.fileSize,
+      fileSizeFormatted: image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(2)} MB` : undefined,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      dimensions: image.width && image.height ? `${image.width}x${image.height}` : undefined,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt
+    }));
+    
+    return {
+      success: true,
+      message: 'Imágenes obtenidas exitosamente',
+      productId: id,
+      data: imageDtos,
+      total: imageDtos.length,
+      primaryCount: imageDtos.filter(img => img.isPrimary).length
+    };
+  }
+
+  @Get(':id/images/primary')
+  @ApiOperation({ 
+    summary: 'Obtener imagen principal de un producto',
+    description: 'Retorna la imagen principal de un producto específico.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Imagen principal obtenida exitosamente',
+    type: ProductImageResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado',
+    type: ErrorResponseDto
+  })
+  async getPrimaryProductImage(@Param('id') id: string): Promise<ProductImageResponseDto> {
+    const image = await this.productsService.getPrimaryProductImage(id);
+    if (!image) {
+      throw new NotFoundException(`Primary image not found for product ${id}`);
+    }
+    
+    return {
+      id: image.id,
+      productId: image.productId,
+      url: image.url,
+      imageDataUrl: image.imageData,
+      altText: image.altText,
+      title: image.title,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder,
+      fileSize: image.fileSize,
+      fileSizeFormatted: image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(2)} MB` : undefined,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      dimensions: image.width && image.height ? `${image.width}x${image.height}` : undefined,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt
+    };
+  }
+
+  @Get('images/:imageId')
+  @ApiOperation({ 
+    summary: 'Obtener una imagen específica',
+    description: 'Retorna una imagen específica por su ID.'
+  })
+  @ApiParam({ 
+    name: 'imageId', 
+    description: 'ID de la imagen',
+    example: '550e8400-e29b-41d4-a716-446655440001'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Imagen obtenida exitosamente',
+    type: ProductImageResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Imagen no encontrada',
+    type: ErrorResponseDto
+  })
+  async getProductImage(@Param('imageId') imageId: string): Promise<ProductImageResponseDto> {
+    const image = await this.productsService.getProductImage(imageId);
+    return {
+      id: image.id,
+      productId: image.productId,
+      url: image.url,
+      imageDataUrl: image.imageData,
+      altText: image.altText,
+      title: image.title,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder,
+      fileSize: image.fileSize,
+      fileSizeFormatted: image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(2)} MB` : undefined,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      dimensions: image.width && image.height ? `${image.width}x${image.height}` : undefined,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt
+    };
+  }
+
+  @Put('images/:imageId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Actualizar una imagen (ADMIN o SUPERADMIN)',
+    description: 'Actualiza la información de una imagen existente.'
+  })
+  @ApiParam({ 
+    name: 'imageId', 
+    description: 'ID de la imagen',
+    example: '550e8400-e29b-41d4-a716-446655440001'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Imagen actualizada exitosamente',
+    type: ProductImageResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Imagen no encontrada',
+    type: ErrorResponseDto
+  })
+  async updateProductImage(
+    @Param('imageId') imageId: string,
+    @Body() updateData: UpdateProductImageDto
+  ): Promise<ProductImageResponseDto> {
+    const image = await this.productsService.updateProductImage(imageId, updateData);
+    return {
+      id: image.id,
+      productId: image.productId,
+      url: image.url,
+      imageDataUrl: image.imageData,
+      altText: image.altText,
+      title: image.title,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder,
+      fileSize: image.fileSize,
+      fileSizeFormatted: image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(2)} MB` : undefined,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      dimensions: image.width && image.height ? `${image.width}x${image.height}` : undefined,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt
+    };
+  }
+
+  @Put(':id/images/primary')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Establecer imagen principal (ADMIN o SUPERADMIN)',
+    description: 'Establece una imagen específica como la imagen principal de un producto.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Imagen principal establecida exitosamente',
+    type: ProductImageResponseDto
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto o imagen no encontrados',
+    type: ErrorResponseDto
+  })
+  async setPrimaryProductImage(
+    @Param('id') id: string,
+    @Body() setPrimaryDto: SetPrimaryImageDto
+  ): Promise<ProductImageResponseDto> {
+    const image = await this.productsService.setPrimaryProductImage(id, setPrimaryDto.imageId);
+    return {
+      id: image.id,
+      productId: image.productId,
+      url: image.url,
+      imageDataUrl: image.imageData,
+      altText: image.altText,
+      title: image.title,
+      isPrimary: image.isPrimary,
+      displayOrder: image.displayOrder,
+      fileSize: image.fileSize,
+      fileSizeFormatted: image.fileSize ? `${(image.fileSize / 1024 / 1024).toFixed(2)} MB` : undefined,
+      mimeType: image.mimeType,
+      width: image.width,
+      height: image.height,
+      dimensions: image.width && image.height ? `${image.width}x${image.height}` : undefined,
+      createdAt: image.createdAt,
+      updatedAt: image.updatedAt
+    };
+  }
+
+  @Put(':id/images/order')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Actualizar orden de imágenes (ADMIN o SUPERADMIN)',
+    description: 'Actualiza el orden de visualización de múltiples imágenes de un producto.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Orden de imágenes actualizado exitosamente'
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto o imágenes no encontrados',
+    type: ErrorResponseDto
+  })
+  async updateProductImagesOrder(
+    @Param('id') id: string,
+    @Body() updateOrderDto: UpdateImageOrderDto
+  ): Promise<{ success: boolean; message: string }> {
+    await this.productsService.updateProductImagesOrder(id, updateOrderDto.imageOrders);
+    return {
+      success: true,
+      message: 'Orden de imágenes actualizado exitosamente'
+    };
+  }
+
+  @Delete('images/:imageId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Eliminar una imagen (ADMIN o SUPERADMIN)',
+    description: 'Elimina una imagen específica de un producto.'
+  })
+  @ApiParam({ 
+    name: 'imageId', 
+    description: 'ID de la imagen',
+    example: '550e8400-e29b-41d4-a716-446655440001'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Imagen eliminada exitosamente'
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Imagen no encontrada',
+    type: ErrorResponseDto
+  })
+  async deleteProductImage(@Param('imageId') imageId: string): Promise<{ success: boolean; message: string }> {
+    await this.productsService.deleteProductImage(imageId);
+    return {
+      success: true,
+      message: 'Imagen eliminada exitosamente'
+    };
+  }
+
+  @Delete(':id/images')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.SUPERADMIN)
+  @ApiBearerAuth()
+  @ApiOperation({ 
+    summary: 'Eliminar todas las imágenes de un producto (ADMIN o SUPERADMIN)',
+    description: 'Elimina todas las imágenes asociadas a un producto específico.'
+  })
+  @ApiParam({ 
+    name: 'id', 
+    description: 'ID del producto',
+    example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Todas las imágenes eliminadas exitosamente'
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: 'Producto no encontrado',
+    type: ErrorResponseDto
+  })
+  async deleteAllProductImages(@Param('id') id: string): Promise<{ success: boolean; message: string }> {
+    await this.productsService.deleteAllProductImages(id);
+    return {
+      success: true,
+      message: 'Todas las imágenes eliminadas exitosamente'
+    };
   }
 }

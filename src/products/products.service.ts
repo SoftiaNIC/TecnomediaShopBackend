@@ -5,6 +5,8 @@ import { ProductCategoryDomainService } from './domain/product-category.service'
 import { ProductCategoryRepositoryAdapter } from './domain/product-category.repository';
 import { Product, CreateProductCommand, UpdateProductCommand, ProductStatus } from './domain/product.entity';
 import { ProductMapper } from './mapper/product.mapper';
+import { ProductImagesRepository } from '../database/repositories';
+import { ProductImage, CreateProductImageCommand, UpdateProductImageCommand } from './domain/product-image.entity';
 import { 
   CreateProductDto, 
   UpdateProductDto, 
@@ -42,6 +44,7 @@ export class ProductsService {
     private readonly productMapper: ProductMapper,
     private readonly productCategoryDomainService: ProductCategoryDomainService,
     private readonly productCategoryRepository: ProductCategoryRepositoryAdapter,
+    private readonly productImagesRepository: ProductImagesRepository,
   ) {}
 
   // Métodos originales (mantenidos para compatibilidad)
@@ -874,5 +877,142 @@ export class ProductsService {
     } catch (error) {
       throw new ConflictException(`No se pudieron remover las categorías: ${error.message}`);
     }
+  }
+
+  // Métodos para gestión de imágenes de productos
+  async addProductImage(productId: string, imageData: CreateProductImageCommand): Promise<ProductImage> {
+    // Verificar que el producto existe
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    // Si es la primera imagen, marcarla como principal automáticamente
+    const imageCount = await this.productImagesRepository.countByProductId(productId);
+    const isPrimary = imageCount === 0 || imageData.isPrimary;
+
+    const imageToCreate = {
+      ...imageData,
+      productId,
+      isPrimary: isPrimary || false,
+      displayOrder: imageData.displayOrder || imageCount,
+    };
+
+    return await this.productImagesRepository.create(imageToCreate);
+  }
+
+  async addMultipleProductImages(productId: string, imagesData: CreateProductImageCommand[]): Promise<ProductImage[]> {
+    // Verificar que el producto existe
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    const currentImageCount = await this.productImagesRepository.countByProductId(productId);
+    const processedImages = imagesData.map((imageData, index) => ({
+      ...imageData,
+      productId,
+      isPrimary: currentImageCount === 0 && index === 0 ? true : imageData.isPrimary || false,
+      displayOrder: imageData.displayOrder || (currentImageCount + index),
+    }));
+
+    return await this.productImagesRepository.createMany(processedImages);
+  }
+
+  async getProductImages(productId: string): Promise<ProductImage[]> {
+    // Verificar que el producto existe
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    return await this.productImagesRepository.findByProductId(productId);
+  }
+
+  async getProductImage(imageId: string): Promise<ProductImage> {
+    const image = await this.productImagesRepository.findById(imageId);
+    if (!image) {
+      throw new NotFoundException(`Product image with ID ${imageId} not found`);
+    }
+    return image;
+  }
+
+  async getPrimaryProductImage(productId: string): Promise<ProductImage | null> {
+    // Verificar que el producto existe
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    return await this.productImagesRepository.findPrimaryByProductId(productId);
+  }
+
+  async updateProductImage(imageId: string, updateData: UpdateProductImageCommand): Promise<ProductImage> {
+    const existingImage = await this.productImagesRepository.findById(imageId);
+    if (!existingImage) {
+      throw new NotFoundException(`Product image with ID ${imageId} not found`);
+    }
+
+    // Si se está marcando como principal, desmarcar las demás
+    if (updateData.isPrimary && updateData.isPrimary !== existingImage.isPrimary) {
+      await this.productImagesRepository.setPrimaryImage(existingImage.productId, imageId);
+    }
+
+    return await this.productImagesRepository.update(imageId, updateData);
+  }
+
+  async deleteProductImage(imageId: string): Promise<void> {
+    const existingImage = await this.productImagesRepository.findById(imageId);
+    if (!existingImage) {
+      throw new NotFoundException(`Product image with ID ${imageId} not found`);
+    }
+
+    await this.productImagesRepository.delete(imageId);
+  }
+
+  async deleteAllProductImages(productId: string): Promise<void> {
+    // Verificar que el producto existe
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    await this.productImagesRepository.deleteByProductId(productId);
+  }
+
+  async setPrimaryProductImage(productId: string, imageId: string): Promise<ProductImage> {
+    // Verificar que el producto existe
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    // Verificar que la imagen existe y pertenece al producto
+    const imageExists = await this.productImagesRepository.exists(imageId, productId);
+    if (!imageExists) {
+      throw new NotFoundException(`Product image with ID ${imageId} not found for product ${productId}`);
+    }
+
+    await this.productImagesRepository.setPrimaryImage(productId, imageId);
+    const updatedImage = await this.productImagesRepository.findById(imageId);
+    return updatedImage!;
+  }
+
+  async updateProductImagesOrder(productId: string, imageOrders: { imageId: string; displayOrder: number }[]): Promise<void> {
+    // Verificar que el producto existe
+    const product = await this.productRepository.findById(productId);
+    if (!product) {
+      throw new NotFoundException(`Product with ID ${productId} not found`);
+    }
+
+    // Verificar que todas las imágenes existen y pertenecen al producto
+    for (const { imageId } of imageOrders) {
+      const imageExists = await this.productImagesRepository.exists(imageId, productId);
+      if (!imageExists) {
+        throw new NotFoundException(`Product image with ID ${imageId} not found for product ${productId}`);
+      }
+    }
+
+    await this.productImagesRepository.updateDisplayOrder(productId, imageOrders);
   }
 }

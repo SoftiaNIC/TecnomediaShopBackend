@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ProductsController } from './products.controller';
 import { ProductsService } from './products.service';
 import { DatabaseModule } from '../database/database.module';
-import { ProductsRepository, CategoriesRepository } from '../database/repositories';
+import { ProductsRepository, CategoriesRepository, ProductImagesRepository } from '../database/repositories';
 import { ProductDomainService } from './domain/product.service';
 import { ProductRepositoryAdapter } from './domain/product.repository';
 import { ProductCategoryDomainService } from './domain/product-category.service';
@@ -19,6 +19,7 @@ const PRODUCT_CATEGORY_REPOSITORY_TOKEN = 'PRODUCT_CATEGORY_REPOSITORY_TOKEN';
     ProductsService, 
     ProductsRepository, 
     CategoriesRepository,
+    ProductImagesRepository,
     ProductDomainService, 
     ProductCategoryDomainService,
     ProductCategoryRepositoryAdapter,
@@ -33,6 +34,6 @@ const PRODUCT_CATEGORY_REPOSITORY_TOKEN = 'PRODUCT_CATEGORY_REPOSITORY_TOKEN';
       useClass: ProductCategoryRepositoryAdapter,
     }
   ],
-  exports: [ProductsService, ProductsRepository, ProductDomainService, ProductCategoryDomainService, ProductCategoryRepositoryAdapter, ProductRepositoryAdapter],
+  exports: [ProductsService, ProductsRepository, ProductImagesRepository, ProductDomainService, ProductCategoryDomainService, ProductCategoryRepositoryAdapter, ProductRepositoryAdapter],
 })
 export class ProductsModule {}
