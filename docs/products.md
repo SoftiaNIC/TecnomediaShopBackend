@@ -11,6 +11,7 @@ El módulo de productos gestiona el catálogo de productos, inventario, categor�
 |---------|-------------|
 | **📡 Endpoints CRUD** | Crear, leer, actualizar y eliminar productos |
 | **📦 Gestión de Inventario** | Control de stock y disponibilidad |
+| **🖼️ Gestión de Imágenes** | Subida y gestión de imágenes de productos |
 | **🔍 Búsqueda y Filtrado** | Búsqueda por slug, categoría y términos |
 | **⭐ Productos Destacados** | Gestión de productos destacados |
 | **🏷️ SEO y Metadatos** | Optimización para motores de búsqueda |
@@ -29,6 +30,17 @@ El módulo de productos gestiona el catálogo de productos, inventario, categor�
   - [📊 PUT /products/:id/stock](#-put-productsidstock) - Actualizar stock
   - [✅ GET /products/active](#-get-productsactive) - Productos activos
   - [📦 GET /products/in-stock](#-get-productsin-stock) - Productos en stock
+- [Gestión de Imágenes](#gestión-de-imágenes)
+  - [🖼️ POST /products/:id/images](#️-post-productsidimages) - Agregar imagen a producto
+  - [📚 POST /products/:id/images/batch](#-post-productsidimagesbatch) - Agregar múltiples imágenes
+  - [👀 GET /products/:id/images](#-get-productsidimages) - Obtener imágenes de producto
+  - [⭐ GET /products/:id/images/primary](#-get-productsidimagesprimary) - Obtener imagen principal
+  - [🔍 GET /products/images/:imageId](#-get-productsimagesimageid) - Obtener imagen específica
+  - [✏️ PUT /products/images/:imageId](#️-put-productsimagesimageid) - Actualizar imagen
+  - [🌟 PUT /products/:id/images/primary](#-put-productsidimagesprimary) - Establecer imagen principal
+  - [🔄 PUT /products/:id/images/order](#-put-productsidimagesorder) - Actualizar orden de imágenes
+  - [🗑️ DELETE /products/images/:imageId](#-delete-productsimagesimageid) - Eliminar imagen específica
+  - [🧹 DELETE /products/:id/images](#-delete-productsidimages) - Eliminar todas las imágenes
 - [Búsqueda y Filtrado](#búsqueda-y-filtrado)
   - [🏷️ GET /products/category/:categoryId](#-get-productscategorycategoryid) - Productos por categoría
   - [🔎 GET /products/search/:term](#-get-productssearchterm) - Buscar productos
@@ -626,6 +638,563 @@ export enum ProductStatus {
    - Permite vender incluso con `quantity <= 0`
    - Útil para productos con reposición rápida
    - Puede resultar en stock negativo
+
+## Gestión de Imágenes
+
+La gestión de imágenes permite subir, organizar y mantener las imágenes asociadas a los productos. Soporta tanto imágenes en base64 como URLs externas.
+
+### Características Principales
+
+- **Subida en Base64**: Permite subir imágenes directamente como datos base64
+- **URLs Externas**: Soporta referencias a imágenes alojadas externamente
+- **Imagen Principal**: Cada producto puede tener una imagen principal designada
+- **Orden de Visualización**: Control sobre el orden en que se muestran las imágenes
+- **Metadatos**: Soporte para alt text, títulos, dimensiones y más
+- **Validación Automática**: Verificación de formatos, tamaños y tipos MIME
+
+### Formatos Soportados
+
+```typescript
+export enum ImageMimeType {
+  JPEG = 'image/jpeg',
+  PNG = 'image/png',
+  GIF = 'image/gif',
+  WEBP = 'image/webp',
+  SVG = 'image/svg+xml'
+}
+```
+
+### Endpoints de Imágenes
+
+<a name="️-post-productsidimages"></a>
+### 🖼️ POST /products/:id/images
+Agregar una imagen a un producto existente (solo ADMIN o SUPERADMIN).
+
+**Parámetros de Ruta:**
+- `id` (string, required): ID del producto
+
+**Cuerpo de la Solicitud:**
+```json
+{
+  "imageData": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+  "url": "https://example.com/images/product-image.jpg",
+  "altText": "Laptop gaming ASUS ROG vista frontal",
+  "title": "Laptop ASUS ROG",
+  "isPrimary": false,
+  "displayOrder": 0,
+  "fileSize": 1024000,
+  "mimeType": "image/jpeg",
+  "width": 1920,
+  "height": 1080
+}
+```
+
+**Reglas de Validación:**
+- Se requiere `imageData` (base64) o `url` (externa), pero no ambos
+- Si es la primera imagen del producto, se marca automáticamente como principal
+- Formatos soportados: JPEG, PNG, GIF, WEBP, SVG
+- Tamaño máximo configurable (por defecto 10MB)
+
+**Respuesta Exitosa (201):**
+```json
+{
+  "success": true,
+  "message": "Imagen agregada exitosamente",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "url": "https://example.com/images/product-image.jpg",
+    "imageDataUrl": "data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUg...",
+    "altText": "Laptop gaming ASUS ROG vista frontal",
+    "title": "Laptop ASUS ROG",
+    "isPrimary": true,
+    "displayOrder": 0,
+    "fileSize": 1024000,
+    "fileSizeFormatted": "1.00 MB",
+    "mimeType": "image/jpeg",
+    "width": 1920,
+    "height": 1080,
+    "dimensions": "1920x1080",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+<a name="-post-productsidimagesbatch"></a>
+### 📚 POST /products/:id/images/batch
+Agregar múltiples imágenes a un producto en una sola solicitud (solo ADMIN o SUPERADMIN).
+
+**Parámetros de Ruta:**
+- `id` (string, required): ID del producto
+
+**Cuerpo de la Solicitud:**
+```json
+[
+  {
+    "imageData": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJ...",
+    "altText": "Vista frontal del producto",
+    "title": "Producto - Frontal",
+    "isPrimary": true,
+    "displayOrder": 0
+  },
+  {
+    "url": "https://example.com/images/producto-lateral.jpg",
+    "altText": "Vista lateral del producto",
+    "title": "Producto - Lateral",
+    "displayOrder": 1
+  }
+]
+```
+
+**Respuesta Exitosa (201):**
+```json
+{
+  "success": true,
+  "message": "Imágenes agregadas exitosamente",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "productId": "550e8400-e29b-41d4-a716-446655440001",
+      "url": null,
+      "imageDataUrl": "data:image/jpeg;base64,iVBORw0KGgoAAAANSUhEUg...",
+      "altText": "Vista frontal del producto",
+      "title": "Producto - Frontal",
+      "isPrimary": true,
+      "displayOrder": 0,
+      "fileSize": 1024000,
+      "fileSizeFormatted": "1.00 MB",
+      "mimeType": "image/jpeg",
+      "width": 1920,
+      "height": 1080,
+      "dimensions": "1920x1080",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    },
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440001",
+      "productId": "550e8400-e29b-41d4-a716-446655440001",
+      "url": "https://example.com/images/producto-lateral.jpg",
+      "imageDataUrl": null,
+      "altText": "Vista lateral del producto",
+      "title": "Producto - Lateral",
+      "isPrimary": false,
+      "displayOrder": 1,
+      "fileSize": null,
+      "fileSizeFormatted": null,
+      "mimeType": "image/jpeg",
+      "width": 1920,
+      "height": 1080,
+      "dimensions": "1920x1080",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "totalImages": 2,
+    "primaryImageSet": true,
+    "processedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+<a name="-get-productsidimages"></a>
+### 👀 GET /products/:id/images
+Obtener todas las imágenes asociadas a un producto.
+
+**Parámetros de Ruta:**
+- `id` (string, required): ID del producto
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Imágenes obtenidas exitosamente",
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "productId": "550e8400-e29b-41d4-a716-446655440001",
+      "url": "https://example.com/images/product-image.jpg",
+      "imageDataUrl": null,
+      "altText": "Laptop gaming ASUS ROG vista frontal",
+      "title": "Laptop ASUS ROG",
+      "isPrimary": true,
+      "displayOrder": 0,
+      "fileSize": null,
+      "fileSizeFormatted": null,
+      "mimeType": "image/jpeg",
+      "width": 1920,
+      "height": 1080,
+      "dimensions": "1920x1080",
+      "createdAt": "2024-01-15T10:30:00.000Z",
+      "updatedAt": "2024-01-15T10:30:00.000Z"
+    }
+  ],
+  "meta": {
+    "total": 1,
+    "primaryImageId": "550e8400-e29b-41d4-a716-446655440000"
+  }
+}
+```
+
+---
+
+<a name="-get-productsidimagesprimary"></a>
+### ⭐ GET /products/:id/images/primary
+Obtener la imagen principal de un producto.
+
+**Parámetros de Ruta:**
+- `id` (string, required): ID del producto
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Imagen principal obtenida exitosamente",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "url": "https://example.com/images/product-image.jpg",
+    "imageDataUrl": null,
+    "altText": "Laptop gaming ASUS ROG vista frontal",
+    "title": "Laptop ASUS ROG",
+    "isPrimary": true,
+    "displayOrder": 0,
+    "fileSize": null,
+    "fileSizeFormatted": null,
+    "mimeType": "image/jpeg",
+    "width": 1920,
+    "height": 1080,
+    "dimensions": "1920x1080",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+<a name="-get-productsimagesimageid"></a>
+### 🔍 GET /products/images/:imageId
+Obtener una imagen específica por su ID.
+
+**Parámetros de Ruta:**
+- `imageId` (string, required): ID de la imagen
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Imagen obtenida exitosamente",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "url": "https://example.com/images/product-image.jpg",
+    "imageDataUrl": null,
+    "altText": "Laptop gaming ASUS ROG vista frontal",
+    "title": "Laptop ASUS ROG",
+    "isPrimary": true,
+    "displayOrder": 0,
+    "fileSize": null,
+    "fileSizeFormatted": null,
+    "mimeType": "image/jpeg",
+    "width": 1920,
+    "height": 1080,
+    "dimensions": "1920x1080",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:30:00.000Z"
+  }
+}
+```
+
+---
+
+<a name="️-put-productsimagesimageid"></a>
+### ✏️ PUT /products/images/:imageId
+Actualizar información de una imagen existente (solo ADMIN o SUPERADMIN).
+
+**Parámetros de Ruta:**
+- `imageId` (string, required): ID de la imagen
+
+**Cuerpo de la Solicitud:**
+```json
+{
+  "altText": "Nueva descripción alternativa",
+  "title": "Nuevo título de la imagen",
+  "isPrimary": false,
+  "displayOrder": 1
+}
+```
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Imagen actualizada exitosamente",
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "url": "https://example.com/images/product-image.jpg",
+    "imageDataUrl": null,
+    "altText": "Nueva descripción alternativa",
+    "title": "Nuevo título de la imagen",
+    "isPrimary": false,
+    "displayOrder": 1,
+    "fileSize": null,
+    "fileSizeFormatted": null,
+    "mimeType": "image/jpeg",
+    "width": 1920,
+    "height": 1080,
+    "dimensions": "1920x1080",
+    "createdAt": "2024-01-15T10:30:00.000Z",
+    "updatedAt": "2024-01-15T10:35:00.000Z"
+  }
+}
+```
+
+---
+
+<a name="-put-productsidimagesprimary"></a>
+### 🌟 PUT /products/:id/images/primary
+Establecer una imagen como principal (solo ADMIN o SUPERADMIN).
+
+**Parámetros de Ruta:**
+- `id` (string, required): ID del producto
+
+**Cuerpo de la Solicitud:**
+```json
+{
+  "imageId": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Imagen principal establecida exitosamente",
+  "data": {
+    "previousPrimaryId": "550e8400-e29b-41d4-a716-446655440001",
+    "newPrimaryId": "550e8400-e29b-41d4-a716-446655440000",
+    "updatedAt": "2024-01-15T10:35:00.000Z"
+  }
+}
+```
+
+---
+
+<a name="-put-productsidimagesorder"></a>
+### 🔄 PUT /products/:id/images/order
+Actualizar el orden de visualización de las imágenes (solo ADMIN o SUPERADMIN).
+
+**Parámetros de Ruta:**
+- `id` (string, required): ID del producto
+
+**Cuerpo de la Solicitud:**
+```json
+{
+  "images": [
+    {
+      "imageId": "550e8400-e29b-41d4-a716-446655440000",
+      "displayOrder": 0
+    },
+    {
+      "imageId": "550e8400-e29b-41d4-a716-446655440001",
+      "displayOrder": 1
+    }
+  ]
+}
+```
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Orden de imágenes actualizado exitosamente",
+  "data": {
+    "updatedImages": 2,
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "updatedAt": "2024-01-15T10:35:00.000Z"
+  }
+}
+```
+
+---
+
+<a name="-delete-productsimagesimageid"></a>
+### 🗑️ DELETE /products/images/:imageId
+Eliminar una imagen específica (solo ADMIN o SUPERADMIN).
+
+**Parámetros de Ruta:**
+- `imageId` (string, required): ID de la imagen
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Imagen eliminada exitosamente",
+  "data": {
+    "deletedId": "550e8400-e29b-41d4-a716-446655440000",
+    "deletedAt": "2024-01-15T10:35:00.000Z",
+    "wasPrimary": true,
+    "remainingImages": 2
+  }
+}
+```
+
+---
+
+<a name="-delete-productsidimages"></a>
+### 🧹 DELETE /products/:id/images
+Eliminar todas las imágenes de un producto (solo ADMIN o SUPERADMIN).
+
+**Parámetros de Ruta:**
+- `id` (string, required): ID del producto
+
+**Respuesta Exitosa (200):**
+```json
+{
+  "success": true,
+  "message": "Todas las imágenes eliminadas exitosamente",
+  "data": {
+    "productId": "550e8400-e29b-41d4-a716-446655440001",
+    "deletedCount": 3,
+    "deletedAt": "2024-01-15T10:35:00.000Z"
+  }
+}
+```
+
+### DTOs para Gestión de Imágenes
+
+#### CreateProductImageDto
+```typescript
+export class CreateProductImageDto {
+  @IsUUID()
+  @IsNotEmpty()
+  productId: string;
+
+  @IsUrl()
+  @IsOptional()
+  @ValidateIf((o) => !o.imageData)
+  url?: string;
+
+  @IsBase64()
+  @IsOptional()
+  @ValidateIf((o) => !o.url)
+  imageData?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  altText?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  title?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isPrimary?: boolean;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  displayOrder?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  fileSize?: number;
+
+  @IsEnum(ImageMimeType)
+  @IsOptional()
+  mimeType?: string;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  width?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  height?: number;
+}
+```
+
+#### UpdateProductImageDto
+```typescript
+export class UpdateProductImageDto {
+  @IsUrl()
+  @IsOptional()
+  url?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  altText?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(255)
+  title?: string;
+
+  @IsBoolean()
+  @IsOptional()
+  isPrimary?: boolean;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  displayOrder?: number;
+
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  fileSize?: number;
+
+  @IsEnum(ImageMimeType)
+  @IsOptional()
+  mimeType?: string;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  width?: number;
+
+  @IsNumber()
+  @Min(1)
+  @IsOptional()
+  height?: number;
+}
+```
+
+### Mejores Prácticas para Gestión de Imágenes
+
+1. **Optimización de Imágenes**:
+   - Comprimir imágenes antes de subirlas
+   - Usar formatos modernos como WebP cuando sea posible
+   - Mantener tamaños razonables (máximo 10MB recomendado)
+
+2. **SEO y Accesibilidad**:
+   - Siempre proporcionar `altText` descriptivo
+   - Usar títulos relevantes para las imágenes
+   - Incluir palabras clave en los nombres de archivo
+
+3. **Organización**:
+   - Establecer una imagen principal clara
+   - Usar `displayOrder` para organizar imágenes lógicamente
+   - Mantener consistencia en los tamaños y orientaciones
+
+4. **Rendimiento**:
+   - Considerar usar CDN para imágenes externas
+   - Implementar lazy loading en el frontend
+   - Proporcionar múltiples tamaños de imagen cuando sea necesario
 
 ## DTOs y Validaciones
 
