@@ -887,15 +887,18 @@ export class ProductsService {
       throw new NotFoundException(`Product with ID ${productId} not found`);
     }
 
+    // Validar y procesar los datos de imagen
+    const processedImageData = this.processImageData(imageData);
+
     // Si es la primera imagen, marcarla como principal automáticamente
     const imageCount = await this.productImagesRepository.countByProductId(productId);
-    const isPrimary = imageCount === 0 || imageData.isPrimary;
+    const isPrimary = imageCount === 0 || processedImageData.isPrimary;
 
     const imageToCreate = {
-      ...imageData,
+      ...processedImageData,
       productId,
       isPrimary: isPrimary || false,
-      displayOrder: imageData.displayOrder || imageCount,
+      displayOrder: processedImageData.displayOrder || imageCount,
     };
 
     return await this.productImagesRepository.create(imageToCreate);
@@ -909,12 +912,15 @@ export class ProductsService {
     }
 
     const currentImageCount = await this.productImagesRepository.countByProductId(productId);
-    const processedImages = imagesData.map((imageData, index) => ({
-      ...imageData,
-      productId,
-      isPrimary: currentImageCount === 0 && index === 0 ? true : imageData.isPrimary || false,
-      displayOrder: imageData.displayOrder || (currentImageCount + index),
-    }));
+    const processedImages = imagesData.map((imageData, index) => {
+      const processedImageData = this.processImageData(imageData);
+      return {
+        ...processedImageData,
+        productId,
+        isPrimary: currentImageCount === 0 && index === 0 ? true : processedImageData.isPrimary || false,
+        displayOrder: processedImageData.displayOrder || (currentImageCount + index),
+      };
+    });
 
     return await this.productImagesRepository.createMany(processedImages);
   }
@@ -1014,5 +1020,72 @@ export class ProductsService {
     }
 
     await this.productImagesRepository.updateDisplayOrder(productId, imageOrders);
+  }
+
+  /**
+   * Procesa y valida los datos de imagen para asegurar que se guarden en los campos correctos
+   * - Los datos base64 deben ir en imageData
+   * - Las URLs externas deben ir en url
+   */
+  private processImageData(imageData: CreateProductImageCommand): CreateProductImageCommand {
+    const processedData = { ...imageData };
+
+    // Si se proporcionan datos en ambos campos, dar prioridad a imageData para base64
+    if (imageData.imageData && imageData.url) {
+      // Verificar si url contiene datos base64 (error común)
+      if (this.isBase64(imageData.url)) {
+        console.warn('URL contains base64 data, moving to imageData field');
+        processedData.imageData = imageData.url;
+        processedData.url = undefined;
+      }
+      // Verificar si imageData es una URL válida
+      else if (this.isValidUrl(imageData.imageData)) {
+        console.warn('imageData contains URL, moving to url field');
+        processedData.url = imageData.imageData;
+        processedData.imageData = undefined;
+      }
+    }
+    // Si solo se proporciona url pero contiene base64, moverlo a imageData
+    else if (imageData.url && this.isBase64(imageData.url)) {
+      console.warn('URL contains base64 data, moving to imageData field');
+      processedData.imageData = imageData.url;
+      processedData.url = undefined;
+    }
+    // Si solo se proporciona imageData pero es una URL, moverlo a url
+    else if (imageData.imageData && this.isValidUrl(imageData.imageData)) {
+      console.warn('imageData contains URL, moving to url field');
+      processedData.url = imageData.imageData;
+      processedData.imageData = undefined;
+    }
+
+    return processedData;
+  }
+
+  /**
+   * Verifica si una cadena es datos base64
+   */
+  private isBase64(str: string): boolean {
+    if (typeof str !== 'string') return false;
+    
+    // Eliminar prefijo de data URL si existe
+    const base64Content = str.replace(/^data:\w+\/\w+;base64,/, '');
+    
+    // Verificar si es una cadena base64 válida
+    const base64Regex = /^[A-Za-z0-9+/]+={0,2}$/;
+    return base64Regex.test(base64Content) && base64Content.length % 4 === 0;
+  }
+
+  /**
+   * Verifica si una cadena es una URL válida
+   */
+  private isValidUrl(str: string): boolean {
+    if (typeof str !== 'string') return false;
+    
+    try {
+      new URL(str);
+      return true;
+    } catch {
+      return false;
+    }
   }
 }

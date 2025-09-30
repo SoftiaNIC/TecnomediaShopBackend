@@ -1026,6 +1026,28 @@ export class ProductsController {
     description: 'ID del producto',
     example: '550e8400-e29b-41d4-a716-446655440000'
   })
+  @ApiBody({
+    description: 'Datos de la imagen a agregar',
+    type: CreateProductImageDto,
+    examples: {
+      'create_image': {
+        summary: 'Crear imagen',
+        description: 'Ejemplo para agregar una nueva imagen a un producto',
+        value: {
+          productId: '550e8400-e29b-41d4-a716-446655440000',
+          imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+          altText: 'Laptop gaming ASUS ROG vista frontal',
+          title: 'Laptop ASUS ROG',
+          isPrimary: true,
+          displayOrder: 0,
+          width: 450,
+          height: 450,
+          mimeType: 'image/png',
+          fileSize: 1024
+        }
+      }
+    }
+  })
   @ApiResponse({ 
     status: 201, 
     description: 'Imagen agregada exitosamente',
@@ -1324,6 +1346,26 @@ export class ProductsController {
     description: 'ID de la imagen',
     example: '550e8400-e29b-41d4-a716-446655440001'
   })
+  @ApiBody({
+    description: 'Datos actualizados de la imagen',
+    type: UpdateProductImageDto,
+    examples: {
+      'update_image': {
+        summary: 'Actualizar imagen',
+        description: 'Ejemplo de actualización de datos de imagen',
+        value: {
+          altText: 'Laptop gaming ASUS ROG vista frontal actualizada',
+          title: 'Laptop ASUS ROG Actualizada',
+          isPrimary: false,
+          displayOrder: 1,
+          width: 450,
+          height: 450,
+          mimeType: 'image/jpeg',
+          fileSize: 2048
+        }
+      }
+    }
+  })
   @ApiResponse({ 
     status: 200, 
     description: 'Imagen actualizada exitosamente',
@@ -1372,6 +1414,19 @@ export class ProductsController {
     description: 'ID del producto',
     example: '550e8400-e29b-41d4-a716-446655440000'
   })
+  @ApiBody({
+    description: 'ID de la imagen a establecer como principal',
+    type: SetPrimaryImageDto,
+    examples: {
+      'set_primary': {
+        summary: 'Establecer imagen principal',
+        description: 'Ejemplo para establecer una imagen como principal',
+        value: {
+          imageId: '550e8400-e29b-41d4-a716-446655440001'
+        }
+      }
+    }
+  })
   @ApiResponse({ 
     status: 200, 
     description: 'Imagen principal establecida exitosamente',
@@ -1419,6 +1474,32 @@ export class ProductsController {
     name: 'id', 
     description: 'ID del producto',
     example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiBody({
+    description: 'Lista de imágenes con sus nuevos órdenes de visualización',
+    type: UpdateImageOrderDto,
+    examples: {
+      'update_order': {
+        summary: 'Actualizar orden de imágenes',
+        description: 'Ejemplo para reordenar múltiples imágenes',
+        value: {
+          imageOrders: [
+            {
+              imageId: '550e8400-e29b-41d4-a716-446655440001',
+              displayOrder: 0
+            },
+            {
+              imageId: '550e8400-e29b-41d4-a716-446655440002',
+              displayOrder: 1
+            },
+            {
+              imageId: '550e8400-e29b-41d4-a716-446655440003',
+              displayOrder: 2
+            }
+          ]
+        }
+      }
+    }
   })
   @ApiResponse({ 
     status: 200, 
