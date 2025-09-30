@@ -15,25 +15,19 @@ import { ImageMimeType } from '../domain/product-image.entity';
 
 export class UpdateProductImageDto {
   @ApiPropertyOptional({
-    description: 'URL externa de la imagen (requerida si no se proporciona imageData)',
+    description: 'URL externa de la imagen',
     example: 'https://example.com/images/product-image-updated.jpg'
   })
   @IsUrl()
   @IsOptional()
-  @ValidateIf((o) => !o.imageData, {
-    message: 'URL is required when imageData is not provided'
-  })
   url?: string;
 
   @ApiPropertyOptional({
-    description: 'Datos binarios de la imagen en base64 (requerido si no se proporciona url)',
+    description: 'Datos binarios de la imagen en base64',
     example: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
   })
   @IsBase64()
   @IsOptional()
-  @ValidateIf((o) => !o.url, {
-    message: 'Image data is required when URL is not provided'
-  })
   imageData?: string;
 
   @ApiPropertyOptional({

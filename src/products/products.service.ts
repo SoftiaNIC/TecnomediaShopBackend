@@ -959,12 +959,15 @@ export class ProductsService {
       throw new NotFoundException(`Product image with ID ${imageId} not found`);
     }
 
+    // Validar y procesar los datos de imagen
+    const processedUpdateData = this.processUpdateImageData(updateData, existingImage);
+
     // Si se está marcando como principal, desmarcar las demás
-    if (updateData.isPrimary && updateData.isPrimary !== existingImage.isPrimary) {
+    if (processedUpdateData.isPrimary && processedUpdateData.isPrimary !== existingImage.isPrimary) {
       await this.productImagesRepository.setPrimaryImage(existingImage.productId, imageId);
     }
 
-    return await this.productImagesRepository.update(imageId, updateData);
+    return await this.productImagesRepository.update(imageId, processedUpdateData);
   }
 
   async deleteProductImage(imageId: string): Promise<void> {
@@ -1087,5 +1090,51 @@ export class ProductsService {
     } catch {
       return false;
     }
+  }
+
+  /**
+   * Procesa y valida los datos de imagen para actualización
+   * - Mantiene los datos existentes si no se proporcionan nuevos
+   * - Procesa los nuevos datos para asegurar correcto almacenamiento
+   */
+  private processUpdateImageData(updateData: UpdateProductImageCommand, existingImage: ProductImage): UpdateProductImageCommand {
+    const processedData = { ...updateData };
+
+    // Si se proporcionan nuevos datos de imagen, procesarlos
+    if (updateData.imageData || updateData.url) {
+      // Caso 1: Se proporcionan ambos campos
+      if (updateData.imageData && updateData.url) {
+        // Verificar si url contiene datos base64 (error común)
+        if (this.isBase64(updateData.url)) {
+          console.warn('URL contains base64 data, moving to imageData field');
+          processedData.imageData = updateData.url;
+          processedData.url = undefined;
+        }
+        // Verificar si imageData es una URL válida
+        else if (this.isValidUrl(updateData.imageData)) {
+          console.warn('imageData contains URL, moving to url field');
+          processedData.url = updateData.imageData;
+          processedData.imageData = undefined;
+        }
+      }
+      // Caso 2: Solo se proporciona url pero contiene base64
+      else if (updateData.url && this.isBase64(updateData.url)) {
+        console.warn('URL contains base64 data, moving to imageData field');
+        processedData.imageData = updateData.url;
+        processedData.url = undefined;
+      }
+      // Caso 3: Solo se proporciona imageData pero es una URL
+      else if (updateData.imageData && this.isValidUrl(updateData.imageData)) {
+        console.warn('imageData contains URL, moving to url field');
+        processedData.url = updateData.imageData;
+        processedData.imageData = undefined;
+      }
+    } else {
+      // Si no se proporcionan nuevos datos de imagen, mantener los existentes
+      processedData.url = existingImage.url;
+      processedData.imageData = existingImage.imageData;
+    }
+
+    return processedData;
   }
 }
