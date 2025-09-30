@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ProductImage } from '../domain/product-image.entity';
+import { ProductImage, CreateProductImageCommand } from '../domain/product-image.entity';
 import { ProductImageResponseDto } from '../dto/product-image-response.dto';
+import { CreateProductImageDto } from '../dto/create-product-image.dto';
 import { productImages } from '../../database/schema';
 import { eq } from 'drizzle-orm';
 
@@ -106,6 +107,34 @@ export class ProductImageMapper {
       height: image.height,
       updatedAt: image.updatedAt,
     };
+  }
+  
+  /**
+   * Convierte un DTO a Command para crear imagen
+   */
+  toCreateCommand(dto: CreateProductImageDto): CreateProductImageCommand {
+    return {
+      productId: dto.productId,
+      url: dto.url,
+      imageData: dto.imageData,
+      altText: dto.altText,
+      title: dto.title,
+      isPrimary: dto.isPrimary,
+      displayOrder: dto.displayOrder,
+      fileSize: dto.fileSize,
+      mimeType: dto.mimeType,
+      width: dto.width,
+      height: dto.height,
+    };
+  }
+  
+  /**
+   * Convierte múltiples DTOs a Commands para crear imágenes
+   */
+  toCreateCommands(dtos: CreateProductImageDto[]): CreateProductImageCommand[] {
+    // Asegurarse de que dtos sea siempre un array
+    const dtosArray = Array.isArray(dtos) ? dtos : [dtos];
+    return dtosArray.map(dto => this.toCreateCommand(dto));
   }
   
   /**

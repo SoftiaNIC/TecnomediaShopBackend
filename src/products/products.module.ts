@@ -8,6 +8,7 @@ import { ProductRepositoryAdapter } from './domain/product.repository';
 import { ProductCategoryDomainService } from './domain/product-category.service';
 import { ProductCategoryRepositoryAdapter } from './domain/product-category.repository';
 import { ProductMapper } from './mapper/product.mapper';
+import { ProductImageMapper } from './mapper/product-image.mapper';
 
 const PRODUCT_REPOSITORY_TOKEN = 'PRODUCT_REPOSITORY_TOKEN';
 const PRODUCT_CATEGORY_REPOSITORY_TOKEN = 'PRODUCT_CATEGORY_REPOSITORY_TOKEN';
@@ -25,6 +26,7 @@ const PRODUCT_CATEGORY_REPOSITORY_TOKEN = 'PRODUCT_CATEGORY_REPOSITORY_TOKEN';
     ProductCategoryRepositoryAdapter,
     ProductRepositoryAdapter,
     ProductMapper,
+    ProductImageMapper,
     {
       provide: PRODUCT_REPOSITORY_TOKEN,
       useClass: ProductRepositoryAdapter,

@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { ProductsService } from './products.service';
+import { ProductImageMapper } from './mapper/product-image.mapper';
 import { Product } from './domain/product.entity';
 import { UserRole } from '../users/domain/user.entity';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -41,7 +42,10 @@ import {
 @ApiTags('products')
 @Controller('products')
 export class ProductsController {
-  constructor(private readonly productsService: ProductsService) {}
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly productImageMapper: ProductImageMapper
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -1084,7 +1088,9 @@ export class ProductsController {
     @Param('id') id: string,
     @Body() imagesData: CreateProductImageDto[]
   ): Promise<ProductImagesListResponseDto> {
-    const images = await this.productsService.addMultipleProductImages(id, imagesData);
+    // Convertir DTOs a Commands usando el mapper
+    const createCommands = this.productImageMapper.toCreateCommands(imagesData);
+    const images = await this.productsService.addMultipleProductImages(id, createCommands);
     const imageDtos = images.map(image => ({
       id: image.id,
       productId: image.productId,
