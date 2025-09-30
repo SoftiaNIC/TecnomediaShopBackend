@@ -1,5 +1,5 @@
 import { Controller, Post, Body, UseGuards, Get, Param, Put, Delete, Query, HttpStatus, NotFoundException } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -1073,6 +1073,58 @@ export class ProductsController {
     name: 'id', 
     description: 'ID del producto',
     example: '550e8400-e29b-41d4-a716-446655440000'
+  })
+  @ApiBody({
+    description: 'Array de imágenes para agregar al producto. También se acepta un objeto individual.',
+    type: [CreateProductImageDto],
+    examples: {
+      'multiple_images': {
+        summary: 'Múltiples imágenes',
+        description: 'Ejemplo con múltiples imágenes',
+        value: [
+          {
+            productId: '550e8400-e29b-41d4-a716-446655440000',
+            imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+            altText: 'Imagen 1',
+            title: 'Imagen 1',
+            isPrimary: true,
+            displayOrder: 0,
+            width: 450,
+            height: 450,
+            mimeType: 'image/png',
+            fileSize: 1024
+          },
+          {
+            productId: '550e8400-e29b-41d4-a716-446655440000',
+            imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+            altText: 'Imagen 2',
+            title: 'Imagen 2',
+            isPrimary: false,
+            displayOrder: 1,
+            width: 450,
+            height: 450,
+            mimeType: 'image/png',
+            fileSize: 1024
+          }
+        ]
+      },
+      'single_image': {
+        summary: 'Imagen individual',
+        description: 'Ejemplo con una sola imagen (también aceptado)',
+        value: {
+          productId: '550e8400-e29b-41d4-a716-446655440000',
+          imageData: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+          altText: 'Imagen individual',
+          title: 'Imagen individual',
+          isPrimary: true,
+          displayOrder: 0,
+          width: 450,
+          height: 450,
+          mimeType: 'image/png',
+          fileSize: 1024
+        }
+      }
+    }
   })
   @ApiResponse({ 
     status: 201, 

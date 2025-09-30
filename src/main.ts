@@ -40,6 +40,11 @@ async function bootstrap() {
     credentials: true,
   });
   
+  // Increase body parser limit for image uploads
+  const express = require('express');
+  app.use(express.json({ limit: '10mb' }));
+  app.use(express.urlencoded({ limit: '10mb', extended: true }));
+  
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('E-commerce API')
