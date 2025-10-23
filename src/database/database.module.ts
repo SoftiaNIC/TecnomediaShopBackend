@@ -31,35 +31,23 @@ export const databaseProviders = [
 
       const poolConfig = {
         connectionString,
-        ssl: nodeEnv === 'production' ? { 
-          rejectUnauthorized: false 
-        } : false,
+        ssl: nodeEnv === 'production' ? { rejectUnauthorized: false } : false,
         max: configService.get<number>('DATABASE_MAX_CONNECTIONS', 10),
-        min: configService.get<number>('DATABASE_MIN_CONNECTIONS', 2),
         idleTimeoutMillis: configService.get<number>('DATABASE_IDLE_TIMEOUT', 30000),
-        connectionTimeoutMillis: configService.get<number>('DATABASE_CONNECTION_TIMEOUT', 10000),
-        maxUses: 7500, // Reciclar conexiones periódicamente
-        allowExitOnIdle: true,
+        connectionTimeoutMillis: configService.get<number>('DATABASE_CONNECTION_TIMEOUT', 2000),
       };
 
       const pool = new Pool(poolConfig);
       
-      // Manejo de errores del pool
-      pool.on('error', (err) => {
-        logger.error('Unexpected error on idle database client', err);
-      });
-      
       // Test the connection
-      let client;
       try {
-        client = await pool.connect();
+        const client = await pool.connect();
         await client.query('SELECT NOW()');
+        client.release();
         logger.log('Database connection established successfully');
       } catch (error) {
         logger.error('Failed to establish database connection', error.stack);
-        if (client) client.release();
         await pool.end();
-        throw error;
         throw new Error(`Database connection failed: ${error.message}`);
       }
 
@@ -92,14 +80,11 @@ export class DatabaseModule implements OnModuleDestroy {
   constructor(@Inject(DB_POOL) private readonly pool: Pool) {}
 
   async onModuleDestroy() {
-    if (this.pool) {
-      try {
-        logger.log('Closing database pool...');
-        await this.pool.end();
-        logger.log('Database pool closed successfully');
-      } catch (error) {
-        logger.error('Error closing database pool', error);
-      }
+    try {
+      await this.pool.end();
+      logger.log('Database pool closed successfully');
+    } catch (error) {
+      logger.error('Error closing database pool', error.stack);
     }
   }
 }
