@@ -1,33 +1,44 @@
 # Etapa de construcción
-FROM node:18-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Instalar dependencias
+# 1. Copiar solo los archivos necesarios para instalar dependencias
 COPY package*.json ./
+COPY tsconfig*.json ./
+
+# 2. Instalar dependencias
 RUN npm ci
 
-# Copiar fuentes
+# 3. Copiar el resto del código
 COPY . .
 
-# Construir la aplicación
+# 4. Construir la aplicación
 RUN npm run build
 
+# 5. Verificar la estructura generada
+RUN ls -la /app/dist
+
 # Etapa de producción
-FROM node:18-alpine
+FROM node:22-alpine
 
 WORKDIR /app
 
-# Instalar solo dependencias de producción
+# 1. Copiar package.json
 COPY package*.json ./
+
+# 2. Instalar solo dependencias de producción
 RUN npm ci --only=production
 
-# Copiar solo lo necesario
+# 3. Copiar archivos construidos
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
 
-# Puerto expuesto
+# 4. Exponer el puerto
 EXPOSE 3000
 
-# Comando de inicio
-CMD ["npm", "run", "start:prod"]
+# 5. Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
+
+# 6. Comando de inicio
+CMD ["node", "dist/main"]

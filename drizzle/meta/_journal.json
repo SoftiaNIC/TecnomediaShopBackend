@@ -22,6 +22,13 @@
       "when": 1758759251790,
       "tag": "0002_steep_loners",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1763329363703,
+      "tag": "0003_volatile_jocasta",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@ dotenv.config({ path: '.env', override: true });
 
 export default {
   schema: './src/database/schema.ts',
-  out: './drizzle',
+  out: './src/config/drizzle',
   dialect: 'postgresql',
   dbCredentials: {
     url: process.env.DATABASE_URL || 'postgres://postgres:admin@localhost:5432/ecommerce_db',

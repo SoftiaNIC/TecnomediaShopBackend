@@ -34,11 +34,19 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter(), new ValidationExceptionFilter());
   
   // CORS configuration
-  app.enableCors({
-    origin: true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  // Configuración de CORS para desarrollo y producción
+  const corsOptions = {
+    origin: true, // Permite cualquier origen
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+    exposedHeaders: ['Authorization'],
     credentials: true,
-  });
+    maxAge: 86400, // 24 horas
+    preflightContinue: false,
+    optionsSuccessStatus: 204
+  };
+  
+  app.enableCors(corsOptions);
   
   // Increase body parser limit for image uploads
   const express = require('express');
@@ -72,7 +80,7 @@ async function bootstrap() {
   SwaggerModule.setup('api', app, document);
   
   const port = configService.get<number>('PORT') || 3000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');  // Escuchar en todas las interfaces de red
   
   console.log(`Application is running on: http://localhost:${port}`);
   console.log(`Swagger documentation: http://localhost:${port}/api`);
