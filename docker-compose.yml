@@ -9,38 +9,24 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgres://postgres:admin@db:5432/ecommerce_db?sslmode=disable
+      - DATABASE_URL=postgres://postgres:8f90634c337449d4ae60ac1cecf0d670@db:5432/ecommerce_db?sslmode=disable
       - JWT_SECRET=bd5fa56d2819bf797c7e6b4053e32668
       - JWT_EXPIRES_IN=1d
       - FRONTEND_URL=*
       - CORS_ORIGIN=*
       - NODE_TLS_REJECT_UNAUTHORIZED=0
-    depends_on:
-      db:
-        condition: service_healthy
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
+    
   db:
     image: postgres:15-alpine
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
+      POSTGRES_PASSWORD: 8f90634c337449d4ae60ac1cecf0d670
       POSTGRES_DB: ecommerce_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ecommerce_db"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
+    
 volumes:
   postgres_data:

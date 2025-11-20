@@ -36,9 +36,6 @@ COPY --from=builder /app/dist ./dist
 # 4. Exponer el puerto
 EXPOSE 3000
 
-# 5. Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/health || exit 1
 
-# 6. Comando de inicio
+# 5. Comando de inicio
 CMD ["node", "dist/main"]

@@ -34,9 +34,8 @@ async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter(), new ValidationExceptionFilter());
   
   // CORS configuration
-  // Configuración de CORS para desarrollo y producción
   const corsOptions = {
-    origin: true, // Permite cualquier origen
+    origin: configService.get('CORS_ORIGIN') || '*',
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
     exposedHeaders: ['Authorization'],
@@ -76,14 +75,18 @@ async function bootstrap() {
     .addServer('https://api.example.com', 'Servidor de Producción')
     .build();
   
+  // Configurar prefijo global para todas las rutas
+  app.setGlobalPrefix('api');
+  
+  // Configurar Swagger en /api-docs
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('api-docs', app, document);
   
   const port = configService.get<number>('PORT') || 3000;
   await app.listen(port, '0.0.0.0');  // Escuchar en todas las interfaces de red
   
-  console.log(`Application is running on: http://localhost:${port}`);
-  console.log(`Swagger documentation: http://localhost:${port}/api`);
+  console.log(`Application is running on: http://localhost:${port}/api`);
+  console.log(`Swagger documentation: http://localhost:${port}/api-docs`);
 }
 
 bootstrap();
