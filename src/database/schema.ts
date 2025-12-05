@@ -45,6 +45,7 @@ export const products = pgTable("products", {
   categoryId: uuid("category_id").references(() => categories.id),
   isActive: boolean("is_active").default(true).notNull(),
   isFeatured: boolean("is_featured").default(false).notNull(),
+  brand: varchar("brand", { length: 100 }),
   isDigital: boolean("is_digital").default(false).notNull(),
   metaTitle: varchar("meta_title", { length: 255 }),
   metaDescription: text("meta_description"),

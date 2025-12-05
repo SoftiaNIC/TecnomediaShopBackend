@@ -1,15 +1,15 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, like, or, desc, asc, lte, gte, sql } from 'drizzle-orm';
+import { eq, and, like, or, desc, asc, lte, gte, sql, getTableColumns } from 'drizzle-orm';
 import { products, categories } from '../schema';
 import { DB_CONNECTION } from '../database.module';
 
 export type NewProduct = typeof products.$inferInsert;
-export type Product = typeof products.$inferSelect;
+export type Product = typeof products.$inferSelect & { categoryName?: string | null };
 
 @Injectable()
 export class ProductsRepository {
-  constructor(@Inject(DB_CONNECTION) private db: NodePgDatabase) {}
+  constructor(@Inject(DB_CONNECTION) private db: NodePgDatabase) { }
 
   async create(productData: NewProduct): Promise<Product> {
     const [product] = await this.db.insert(products).values(productData).returning();
@@ -18,8 +18,9 @@ export class ProductsRepository {
 
   async findById(id: string): Promise<Product | null> {
     const [product] = await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(products.id, id))
       .limit(1);
     return product || null;
@@ -27,8 +28,9 @@ export class ProductsRepository {
 
   async findBySlug(slug: string): Promise<Product | null> {
     const [product] = await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(products.slug, slug))
       .limit(1);
     return product || null;
@@ -36,8 +38,9 @@ export class ProductsRepository {
 
   async findBySku(sku: string): Promise<Product | null> {
     const [product] = await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(products.sku, sku))
       .limit(1);
     return product || null;
@@ -45,10 +48,11 @@ export class ProductsRepository {
 
   async findAll(limit = 10, offset = 0, sortBy = 'createdAt', sortOrder = 'desc'): Promise<Product[]> {
     const orderBy = sortOrder === 'desc' ? desc(products[sortBy]) : asc(products[sortBy]);
-    
+
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .limit(limit)
       .offset(offset)
       .orderBy(orderBy);
@@ -56,8 +60,9 @@ export class ProductsRepository {
 
   async findByCategory(categoryId: string, limit = 10, offset = 0): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(products.categoryId, categoryId))
       .limit(limit)
       .offset(offset)
@@ -66,8 +71,9 @@ export class ProductsRepository {
 
   async search(searchTerm: string, limit = 10, offset = 0): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
         or(
           like(products.name, `%${searchTerm}%`),
@@ -83,8 +89,9 @@ export class ProductsRepository {
 
   async findActive(limit = 10, offset = 0): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(products.isActive, true))
       .limit(limit)
       .offset(offset)
@@ -93,8 +100,9 @@ export class ProductsRepository {
 
   async findInStock(limit = 10, offset = 0): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
         and(
           eq(products.isActive, true),
@@ -110,8 +118,9 @@ export class ProductsRepository {
 
   async findDigital(limit = 10, offset = 0): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(products.isDigital, true))
       .limit(limit)
       .offset(offset)
@@ -175,9 +184,9 @@ export class ProductsRepository {
   async updateStock(id: string, quantity: number): Promise<Product | null> {
     const [product] = await this.db
       .update(products)
-      .set({ 
-        quantity, 
-        updatedAt: new Date() 
+      .set({
+        quantity,
+        updatedAt: new Date()
       })
       .where(eq(products.id, id))
       .returning();
@@ -186,8 +195,9 @@ export class ProductsRepository {
 
   async findLowStock(threshold: number = 10, limit = 10, offset = 0): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
         and(
           eq(products.isActive, true),
@@ -202,8 +212,9 @@ export class ProductsRepository {
 
   async findOutOfStock(limit = 10): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
         and(
           eq(products.isActive, true),
@@ -219,8 +230,9 @@ export class ProductsRepository {
   // Métodos adicionales para endpoints especializados
   async findNewArrivals(cutoffDate: Date, limit: number): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
         and(
           eq(products.isActive, true),
@@ -248,8 +260,9 @@ export class ProductsRepository {
     // TODO: Implementar lógica real de bestsellers cuando se tenga el módulo de órdenes
     // Por ahora, retornar productos activos ordenados por nombre (simulado)
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(eq(products.isActive, true))
       .limit(limit)
       .orderBy(desc(products.createdAt));
@@ -262,8 +275,9 @@ export class ProductsRepository {
 
   async findFeaturedProducts(limit: number): Promise<Product[]> {
     return await this.db
-      .select()
+      .select({ ...getTableColumns(products), categoryName: categories.name })
       .from(products)
+      .leftJoin(categories, eq(products.categoryId, categories.id))
       .where(
         and(
           eq(products.isActive, true),

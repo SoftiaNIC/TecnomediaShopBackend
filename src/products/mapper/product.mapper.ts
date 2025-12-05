@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
-import { 
-  Product, 
-  CreateProductCommand, 
-  UpdateProductCommand 
+import {
+  Product,
+  CreateProductCommand,
+  UpdateProductCommand
 } from '../domain/product.entity';
-import { 
-  CreateProductDto, 
+import {
+  CreateProductDto,
   UpdateProductDto,
   ProductResponseDto,
   ProductsListResponseDto
@@ -13,7 +13,7 @@ import {
 
 @Injectable()
 export class ProductMapper {
-  
+
   /**
    * Convierte un CreateProductDto a CreateProductCommand
    */
@@ -30,16 +30,17 @@ export class ProductMapper {
       allowOutOfStockPurchases: dto.allowOutOfStockPurchases,
       isDigital: dto.isDigital,
       isFeatured: dto.isFeatured,
+      brand: dto.brand,
       weight: dto.weight,
     };
   }
-  
+
   /**
    * Convierte un UpdateProductDto a UpdateProductCommand
    */
   toUpdateCommand(dto: UpdateProductDto): UpdateProductCommand {
     const command: UpdateProductCommand = {};
-    
+
     if (dto.name !== undefined) command.name = dto.name;
     if (dto.description !== undefined) command.description = dto.description;
     if (dto.slug !== undefined) command.slug = dto.slug;
@@ -51,12 +52,13 @@ export class ProductMapper {
     if (dto.allowOutOfStockPurchases !== undefined) command.allowOutOfStockPurchases = dto.allowOutOfStockPurchases;
     if (dto.isActive !== undefined) command.isActive = dto.isActive;
     if (dto.isFeatured !== undefined) command.isFeatured = dto.isFeatured;
+    if (dto.brand !== undefined) command.brand = dto.brand;
     if (dto.isDigital !== undefined) command.isDigital = dto.isDigital;
     if (dto.weight !== undefined) command.weight = dto.weight;
-    
+
     return command;
   }
-  
+
   /**
    * Convierte una entidad de dominio a DTO de respuesta
    */
@@ -78,6 +80,7 @@ export class ProductMapper {
         allowOutOfStockPurchases: product.allowOutOfStockPurchases,
         isActive: product.isActive,
         isFeatured: product.isFeatured,
+        brand: product.brand,
         isDigital: product.isDigital,
         weight: product.weight,
         barcode: product.barcode,
@@ -94,7 +97,7 @@ export class ProductMapper {
       }
     };
   }
-  
+
   /**
    * Convierte múltiples entidades de dominio a DTOs de respuesta
    */

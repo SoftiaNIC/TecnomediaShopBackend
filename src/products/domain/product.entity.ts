@@ -15,6 +15,7 @@ export interface Product {
   allowOutOfStockPurchases: boolean;
   isActive: boolean;
   isFeatured: boolean;
+  brand?: string;
   isDigital: boolean;
   barcode?: string;
   weight?: number;
@@ -37,7 +38,7 @@ export interface CreateProductCommand {
   name: string;
   description: string;
   slug: string;
-  sku: string;
+  sku?: string;
   price: number;
   costPrice?: number;
   comparePrice?: number;
@@ -47,6 +48,7 @@ export interface CreateProductCommand {
   allowOutOfStockPurchases?: boolean;
   isDigital?: boolean;
   isFeatured?: boolean;
+  brand?: string;
   barcode?: string;
   weight?: number;
   metaTitle?: string;
@@ -67,6 +69,7 @@ export interface UpdateProductCommand {
   allowOutOfStockPurchases?: boolean;
   isActive?: boolean;
   isFeatured?: boolean;
+  brand?: string;
   isDigital?: boolean;
   barcode?: string;
   weight?: number;
@@ -105,14 +108,14 @@ export class ProductSlug {
     if (!slug?.trim()) {
       throw new Error('Product slug is required');
     }
-    
+
     const normalizedSlug = slug.toLowerCase().trim();
-    
+
     // Validar formato de slug (solo letras, números, guiones y guiones bajos)
     if (!/^[a-z0-9_-]+$/.test(normalizedSlug)) {
       throw new Error('Product slug can only contain lowercase letters, numbers, hyphens and underscores');
     }
-    
+
     this.slug = normalizedSlug;
   }
 
@@ -130,16 +133,16 @@ export class ProductSku {
     if (!sku?.trim()) {
       throw new Error('Product SKU is required');
     }
-    
+
     const normalizedSku = sku.toUpperCase().trim();
-    
+
     if (normalizedSku.length < 3) {
       throw new Error('Product SKU must be at least 3 characters long');
     }
     if (normalizedSku.length > 50) {
       throw new Error('Product SKU must be less than 50 characters');
     }
-    
+
     this.sku = normalizedSku;
   }
 
@@ -196,7 +199,7 @@ export class ProductQuantity {
     if (quantity > 999999) {
       throw new Error('Product quantity cannot exceed 999,999');
     }
-    
+
     this.quantity = Math.floor(quantity);
     this.trackQuantity = trackQuantity;
   }

@@ -13,8 +13,8 @@ export class CreateProductDto {
   @IsNotEmpty()
   @MinLength(3)
   @MaxLength(255)
-  @Matches(/^[a-zA-Z0-9\s\-\&\'\,\.]+$/, {
-    message: 'El nombre solo puede contener letras, números, espacios y caracteres básicos de puntuación'
+  @Matches(/^[a-zA-ZáéíóúüñÁÉÍÓÚÜÑ0-9\s\-\&\'\,\.\*\(\)\[\]\:]+$/, {
+    message: 'El nombre contiene caracteres no permitidos'
   })
   name: string;
 
@@ -26,20 +26,17 @@ export class CreateProductDto {
   @IsOptional()
   description?: string;
 
-  @ApiProperty({
-    description: 'SKU único del producto',
+  @ApiPropertyOptional({
+    description: 'SKU único del producto (se genera automáticamente si no se proporciona)',
     example: 'IPHONE15-PRO-MAX-256GB',
     minLength: 3,
     maxLength: 100
   })
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   @MinLength(3)
   @MaxLength(100)
-  @Matches(/^[A-Z0-9\-]+$/, {
-    message: 'El SKU solo puede contener letras mayúsculas, números y guiones'
-  })
-  sku: string;
+  sku?: string;
 
   @ApiProperty({
     description: 'URL amigable para el producto',
@@ -175,6 +172,16 @@ export class CreateProductDto {
   @IsBoolean()
   @IsOptional()
   isDigital?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Marca del producto',
+    example: 'Apple',
+    maxLength: 100
+  })
+  @IsString()
+  @IsOptional()
+  @MaxLength(100)
+  brand?: string;
 
   @ApiPropertyOptional({
     description: 'Título SEO para el producto',

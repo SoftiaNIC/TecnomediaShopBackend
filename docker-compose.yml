@@ -2,31 +2,31 @@ version: '3.8'
 
 services:
   api:
-    build: 
+    build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgres://postgres:8f90634c337449d4ae60ac1cecf0d670@db:5432/ecommerce_db?sslmode=disable
+      - DATABASE_URL=postgres://tecnomediadbuser:Xk9$mP2vL@7nQ4wR#8jF5sY3hB6cT0aE&9dG1iU2oA4pZ@db:5432/ecommerce_db?sslmode=disable
       - JWT_SECRET=bd5fa56d2819bf797c7e6b4053e32668
       - JWT_EXPIRES_IN=1d
       - FRONTEND_URL=*
       - CORS_ORIGIN=*
       - NODE_TLS_REJECT_UNAUTHORIZED=0
     restart: unless-stopped
-    
+
   db:
     image: postgres:15-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: 8f90634c337449d4ae60ac1cecf0d670
+      POSTGRES_USER: tecnomediadbuser
+      POSTGRES_PASSWORD: Xk9$mP2vL@7nQ4wR#8jF5sY3hB6cT0aE&9dG1iU2oA4pZ
       POSTGRES_DB: ecommerce_db
-    ports:
-      - "5432:5432"
+    # Puerto NO expuesto públicamente por seguridad
+    # Usa SSH tunnel para conectarte: ssh -L 5432:localhost:5432 usuario@servidor
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    
+
 volumes:
   postgres_data:

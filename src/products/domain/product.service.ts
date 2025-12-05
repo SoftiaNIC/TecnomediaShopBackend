@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import type { IProductRepository } from './product.repository';
-import { 
-  Product, 
-  CreateProductCommand, 
-  UpdateProductCommand, 
+import {
+  Product,
+  CreateProductCommand,
+  UpdateProductCommand,
   ProductStatus,
   ProductName,
   ProductSlug,
@@ -16,13 +16,15 @@ const PRODUCT_REPOSITORY_TOKEN = 'PRODUCT_REPOSITORY_TOKEN';
 
 @Injectable()
 export class ProductDomainService {
-  constructor(@Inject(PRODUCT_REPOSITORY_TOKEN) private readonly productRepository: IProductRepository) {}
+  constructor(@Inject(PRODUCT_REPOSITORY_TOKEN) private readonly productRepository: IProductRepository) { }
 
   async createProduct(command: CreateProductCommand): Promise<Product> {
     // Validaciones de dominio
     const productName = new ProductName(command.name);
     const productSlug = new ProductSlug(command.slug);
-    const productSku = new ProductSku(command.sku);
+    const productSku = new ProductSku(
+      command.sku || this.generateSku(command.name)
+    );
     const productPrice = new ProductPrice(command.price);
     const productQuantity = new ProductQuantity(
       command.quantity || 0,
@@ -88,7 +90,7 @@ export class ProductDomainService {
     if (command.slug) {
       const productSlug = new ProductSlug(command.slug);
       updateData.slug = productSlug.getValue();
-      
+
       // Verificar si el nuevo slug ya existe en otro producto
       const productWithSlug = await this.productRepository.findBySlug(productSlug.getValue());
       if (productWithSlug && productWithSlug.id !== id) {
@@ -99,7 +101,7 @@ export class ProductDomainService {
     if (command.sku) {
       const productSku = new ProductSku(command.sku);
       updateData.sku = productSku.getValue();
-      
+
       // Verificar si el nuevo SKU ya existe en otro producto
       const productWithSku = await this.productRepository.findBySku(productSku.getValue());
       if (productWithSku && productWithSku.id !== id) {
@@ -141,9 +143,9 @@ export class ProductDomainService {
       throw new Error('Product is already active');
     }
 
-    return await this.productRepository.update(id, { 
-      isActive: true, 
-      updatedAt: new Date() 
+    return await this.productRepository.update(id, {
+      isActive: true,
+      updatedAt: new Date()
     });
   }
 
@@ -157,9 +159,9 @@ export class ProductDomainService {
       throw new Error('Product is already inactive');
     }
 
-    return await this.productRepository.update(id, { 
-      isActive: false, 
-      updatedAt: new Date() 
+    return await this.productRepository.update(id, {
+      isActive: false,
+      updatedAt: new Date()
     });
   }
 
@@ -170,14 +172,14 @@ export class ProductDomainService {
     }
 
     const productPrice = new ProductPrice(newPrice);
-    
+
     if (product.price === productPrice.getValue()) {
       throw new Error('Product already has this price');
     }
 
-    return await this.productRepository.update(id, { 
-      price: productPrice.getValue(), 
-      updatedAt: new Date() 
+    return await this.productRepository.update(id, {
+      price: productPrice.getValue(),
+      updatedAt: new Date()
     });
   }
 
@@ -200,9 +202,9 @@ export class ProductDomainService {
       newQuantity = currentQuantity.decreaseQuantity(Math.abs(quantityChange));
     }
 
-    return await this.productRepository.update(id, { 
-      quantity: newQuantity.getValue(), 
-      updatedAt: new Date() 
+    return await this.productRepository.update(id, {
+      quantity: newQuantity.getValue(),
+      updatedAt: new Date()
     });
   }
 
@@ -231,7 +233,7 @@ export class ProductDomainService {
     }
 
     const productQuantity = new ProductQuantity(product.quantity, product.trackQuantity);
-    
+
     if (product.trackQuantity && !productQuantity.isInStock()) {
       return ProductStatus.OUT_OF_STOCK;
     }
@@ -274,9 +276,9 @@ export class ProductDomainService {
       throw new Error('Cannot set an inactive product as featured');
     }
 
-    return await this.productRepository.update(id, { 
-      isFeatured: true, 
-      updatedAt: new Date() 
+    return await this.productRepository.update(id, {
+      isFeatured: true,
+      updatedAt: new Date()
     });
   }
 
@@ -286,9 +288,19 @@ export class ProductDomainService {
       throw new Error('Product not found');
     }
 
-    return await this.productRepository.update(id, { 
-      isFeatured: false, 
-      updatedAt: new Date() 
+    return await this.productRepository.update(id, {
+      isFeatured: false,
     });
+  }
+
+  private generateSku(name: string): string {
+    return name
+      .toUpperCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "") // Remover acentos
+      .replace(/[^A-Z0-9\s-]/g, "") // Remover caracteres especiales
+      .trim()
+      .replace(/\s+/g, "-") // Reemplazar espacios con guiones
+      .slice(0, 50); // Limitar longitud
   }
 }
